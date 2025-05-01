@@ -1,4 +1,4 @@
-const API_BASE = ' https://7916-46-149-81-55.ngrok-free.app/api/apartments';
+const API_BASE = '/api/apartments';
 
 export async function fetchApartments(params = {}) {
   const url = new URL(API_BASE, window.location.origin);
@@ -7,7 +7,9 @@ export async function fetchApartments(params = {}) {
   });
   const res = await fetch(url, {
     headers: {
-      'ngrok-skip-browser-warning': 'true'
+      'ngrok-skip-browser-warning': 'true',
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
     }
   });
   if (!res.ok) throw new Error('Failed to fetch apartments');
@@ -15,7 +17,13 @@ export async function fetchApartments(params = {}) {
 }
 
 export async function fetchApartmentById(id) {
-  const res = await fetch(`${API_BASE}/${id}`);
+  const res = await fetch(`${API_BASE}/${id}`, {
+    headers: {
+      'ngrok-skip-browser-warning': 'true',
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    }
+  });
   if (!res.ok) throw new Error('Failed to fetch apartment');
   return res.json();
 } 

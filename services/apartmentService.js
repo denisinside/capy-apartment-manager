@@ -7,6 +7,25 @@ class ApartmentService {
         limit = 10
     }) {
         try {
+            // Перевіряємо всі квартири в базі
+            const allApartments = await Apartment.find({});
+            console.log('Total apartments in DB:', allApartments.length);
+            
+            // Перевіряємо квартири з is_active = true
+            const activeApartments = await Apartment.find({ is_active: true });
+            console.log('Active apartments:', activeApartments.length);
+            
+            // Перевіряємо квартири в Києві
+            const kyivApartments = await Apartment.find({ 'apartment.address.city': 'Київ' });
+            console.log('Apartments in Kyiv:', kyivApartments.length);
+            
+            // Перевіряємо всі унікальні міста в базі
+            const allCities = await Apartment.find({}, 'apartment.address.city');
+            const uniqueCities = [...new Set(allCities.map(apt => apt.apartment.address.city))];
+            console.log('Unique cities in DB:', uniqueCities);
+
+            console.log('Subscription Options:', JSON.stringify(subscriptionOptions, null, 2));
+            
             if (!subscriptionOptions) {
                 return await Apartment.find()
                 .skip(offset)
@@ -14,8 +33,8 @@ class ApartmentService {
             }
 
             const query = {
-                'apartment.address.city': subscriptionOptions.city,
-                is_active: true
+                'apartment.address.city': subscriptionOptions.city
+                //'is_active': true
             };
 
             // Price filter
@@ -48,39 +67,39 @@ class ApartmentService {
             }
 
             // Search by related entities
-            if (subscriptionOptions.districts.length > 0) {
+            if (subscriptionOptions.districts && subscriptionOptions.districts.length > 0) {
                 query['apartment.address.district'] = { $in: subscriptionOptions.districts };
             }
 
-            if (subscriptionOptions.subwayStations.length > 0) {
+            if (subscriptionOptions.subwayStations && subscriptionOptions.subwayStations.length > 0) {
                 query['apartment.infrastructure.subway_station.name'] = { $in: subscriptionOptions.subwayStations };
             }
 
-            if (subscriptionOptions.residentialComplexes.length > 0) {
+            if (subscriptionOptions.residentialComplexes && subscriptionOptions.residentialComplexes.length > 0) {
                 query['apartment.infrastructure.residential_complex'] = { $in: subscriptionOptions.residentialComplexes };
             }
 
-            if (subscriptionOptions.landmarks.length > 0) {
+            if (subscriptionOptions.landmarks && subscriptionOptions.landmarks.length > 0) {
                 query['apartment.infrastructure.landmarks'] = { $all: subscriptionOptions.landmarks };
             }
 
-            if (subscriptionOptions.rieltors.length > 0) {
+            if (subscriptionOptions.rieltors && subscriptionOptions.rieltors.length > 0) {
                 query['apartment.rieltor.rieltor_name'] = { $in: subscriptionOptions.rieltors };
             }
 
-            if (subscriptionOptions.agencies.length > 0) {
+            if (subscriptionOptions.agencies && subscriptionOptions.agencies.length > 0) {
                 query['apartment.rieltor.rieltor_agency'] = { $in: subscriptionOptions.agencies };
             }
 
             // Additional parameters
-            if (subscriptionOptions.commissionRate.min || subscriptionOptions.commissionRate.max) {
+            if (subscriptionOptions.commissionRate && (subscriptionOptions.commissionRate.min || subscriptionOptions.commissionRate.max)) {
                 query['apartment.permits.commission.commission_rate'] = {};
                 if (subscriptionOptions.commissionRate.min) query['apartment.permits.commission.commission_rate'].$gte = subscriptionOptions.commissionRate.min;
                 if (subscriptionOptions.commissionRate.max) query['apartment.permits.commission.commission_rate'].$lte = subscriptionOptions.commissionRate.max;
                 query['apartment.permits.commission.currency'] = subscriptionOptions.commissionRate.currency;
             }
 
-            if (subscriptionOptions.commissionPrice.min || subscriptionOptions.commissionPrice.max) {
+            if (subscriptionOptions.commissionPrice && (subscriptionOptions.commissionPrice.min || subscriptionOptions.commissionPrice.max)) {
                 query['apartment.permits.commission.commission_price'] = {};
                 if (subscriptionOptions.commissionPrice.min) query['apartment.permits.commission.commission_price'].$gte = subscriptionOptions.commissionPrice.min;
                 if (subscriptionOptions.commissionPrice.max) query['apartment.permits.commission.commission_price'].$lte = subscriptionOptions.commissionPrice.max;
@@ -110,10 +129,14 @@ class ApartmentService {
                 query['apartment.characteristics.room_planning'] = subscriptionOptions.roomPlanning;
             }
 
+            console.log('MongoDB Query:', JSON.stringify(query, null, 2));
+
             const apartments = await Apartment.find(query)
                 .skip(offset)
                 .limit(limit);
 
+            console.log('Found apartments:', apartments.length);
+            
             return apartments;
         } catch (error) {
             console.error("Error fetching apartments:", error);

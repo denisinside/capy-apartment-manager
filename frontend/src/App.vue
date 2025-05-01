@@ -1,5 +1,4 @@
 <script setup>
-// Нічого не імпортуємо, бо HelloWorld та лого більше не потрібні
 </script>
 
 <template>

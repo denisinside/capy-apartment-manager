@@ -24,8 +24,7 @@ const error = ref(null)
 
 onMounted(async () => {
   try {
-    console.log('fetching apartments')
-    const response = await fetchApartments()
+    const response = await fetchApartments({ city: 'Київ' })
     if (response.success && Array.isArray(response.data)) {
       apartments.value = response.data
     } else {
