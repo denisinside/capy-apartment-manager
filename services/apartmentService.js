@@ -2,9 +2,7 @@ import { Apartment, Rieltor, Agency, District, SubwayStation, ResidentialComplex
 
 class ApartmentService {
     async getApartments({
-        subscriptionOptions,
-        offset = 0,
-        limit = 10
+        subscriptionOptions
     }) {
         try {
             // Перевіряємо всі квартири в базі
@@ -27,9 +25,7 @@ class ApartmentService {
             console.log('Subscription Options:', JSON.stringify(subscriptionOptions, null, 2));
             
             if (!subscriptionOptions) {
-                return await Apartment.find()
-                .skip(offset)
-                .limit(limit);            
+                return await Apartment.find();            
             }
 
             const query = {
@@ -53,10 +49,8 @@ class ApartmentService {
             }
 
             // Room count filter
-            if (subscriptionOptions.rooms.min || subscriptionOptions.rooms.max) {
-                query['apartment.characteristics.room_count'] = {};
-                if (subscriptionOptions.rooms.min) query['apartment.characteristics.room_count'].$gte = subscriptionOptions.rooms.min;
-                if (subscriptionOptions.rooms.max) query['apartment.characteristics.room_count'].$lte = subscriptionOptions.rooms.max;
+            if (subscriptionOptions.rooms && subscriptionOptions.rooms.length > 0) {
+                query['apartment.characteristics.room_count'] = { $in: subscriptionOptions.rooms };
             }
 
             // Floor filter
@@ -129,11 +123,21 @@ class ApartmentService {
                 query['apartment.characteristics.room_planning'] = subscriptionOptions.roomPlanning;
             }
 
+            // Commission filter
+            if (subscriptionOptions.commission) {
+                if (subscriptionOptions.commission.min !== undefined || subscriptionOptions.commission.max !== undefined) {
+                    query['apartment.permits.commission.commission_price.price_number'] = {};
+                    if (subscriptionOptions.commission.min !== undefined) query['apartment.permits.commission.commission_price.price_number'].$gte = Number(subscriptionOptions.commission.min);
+                    if (subscriptionOptions.commission.max !== undefined) query['apartment.permits.commission.commission_price.price_number'].$lte = Number(subscriptionOptions.commission.max);
+                }
+            }
+            if (subscriptionOptions.noCommission) {
+                query['apartment.permits.commission.commission_price.price_number'] = 0;
+            }
+
             console.log('MongoDB Query:', JSON.stringify(query, null, 2));
 
-            const apartments = await Apartment.find(query)
-                .skip(offset)
-                .limit(limit);
+            const apartments = await Apartment.find(query);
 
             console.log('Found apartments:', apartments.length);
             

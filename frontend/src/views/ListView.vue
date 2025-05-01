@@ -15,16 +15,19 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { fetchApartments } from '../api.js'
 import ApartmentCard from './ApartmentCard.vue'
 
 const apartments = ref([])
 const loading = ref(true)
 const error = ref(null)
+const route = useRoute()
 
 onMounted(async () => {
   try {
-    const response = await fetchApartments({ city: 'Київ' })
+    const params = { ...route.query }
+    const response = await fetchApartments(params)
     if (response.success && Array.isArray(response.data)) {
       apartments.value = response.data
     } else {

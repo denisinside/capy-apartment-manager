@@ -11,7 +11,35 @@ export const createSubscription = async (req, res) => {
             });
         }
 
-        const subscription = await subscriptionService.createSubscription(userId, subscriptionOptions);
+        let parsedOptions = { ...subscriptionOptions };
+        // Парсимо об'єкти, якщо вони прийшли рядком
+        ["price", "area", "floor"].forEach(key => {
+            if (parsedOptions[key] && typeof parsedOptions[key] === 'string') {
+                try {
+                    parsedOptions[key] = JSON.parse(parsedOptions[key]);
+                } catch (e) {}
+            }
+        });
+        // Парсимо масиви рядків
+        ["districts", "subwayStations", "residentialComplexes", "landmarks", "rieltors", "agencies"].forEach(key => {
+            if (parsedOptions[key] && typeof parsedOptions[key] === 'string') {
+                try {
+                    parsedOptions[key] = JSON.parse(parsedOptions[key]);
+                } catch (e) {}
+            }
+        });
+        // Парсимо rooms як масив чисел
+        if (parsedOptions.rooms) {
+            if (typeof parsedOptions.rooms === 'string') {
+                try {
+                    parsedOptions.rooms = JSON.parse(parsedOptions.rooms);
+                } catch (e) {}
+            }
+            if (Array.isArray(parsedOptions.rooms)) {
+                parsedOptions.rooms = parsedOptions.rooms.map(Number).filter(n => !isNaN(n));
+            }
+        }
+        const subscription = await subscriptionService.createSubscription(userId, parsedOptions);
         
         res.status(201).json({
             success: true,

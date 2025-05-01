@@ -146,10 +146,10 @@ const ApartmentSchema = new mongoose.Schema({
 });
 
 // Створюємо моделі
-const SubwayStation = mongoose.model('SubwayStation', SubwayStationSchema);
+const SubwayStation = mongoose.model('Subway_Station', SubwayStationSchema);
 const District = mongoose.model('District', DistrictSchema);
 const Landmark = mongoose.model('Landmark', LandmarkSchema);
-const ResidentialComplex = mongoose.model('ResidentialComplex', ResidentialComplexSchema);
+const ResidentialComplex = mongoose.model('Residential_Complex', ResidentialComplexSchema);
 const Rieltor = mongoose.model('Rieltor', RieltorSchema);
 const Agency = mongoose.model('Agency', AgencySchema);
 const Apartment = mongoose.model('Apartment', ApartmentSchema);

@@ -4,7 +4,7 @@ const SubscriptionOptionsSchema = new mongoose.Schema({
     city: { type: String, required: true },
     price: { type: { min: Number, max: Number, currency: String }, required: false },
     area: { type: { min: Number, max: Number }, required: false },
-    rooms: { type: { min: Number, max: Number }, required: false },
+    rooms: { type: [Number], required: false },
     floor: { type: { min: Number, max: Number }, required: false },
     districts: { type: [String], required: false },
     subwayStations: { type: [String], required: false },
