@@ -72,3 +72,20 @@ export const getApartmentById = async (req, res) => {
         });
     }
 };
+
+export const getCities = async (req, res) => {
+    try {
+        const cities = await apartmentService.getCities();
+        res.json({
+            success: true,
+            data: cities
+        });
+    } catch (error) {
+        console.error('Error in getCities:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get cities',
+            error: error.message
+        });
+    }
+};

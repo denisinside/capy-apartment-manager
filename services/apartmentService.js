@@ -219,6 +219,17 @@ class ApartmentService {
             throw error;
         }
     }
+
+    async getCities() {
+        try {
+            const allCities = await Apartment.find({}, 'apartment.address.city');
+            const uniqueCities = [...new Set(allCities.map(apt => apt.apartment.address.city))];
+            return uniqueCities;
+        } catch (error) {
+            console.error("Error fetching cities:", error);
+            throw error;
+        }
+    }
 }
 
 export { ApartmentService };
