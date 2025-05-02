@@ -1,20 +1,38 @@
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 
-const tg = window.Telegram?.WebApp
-
+let tg = null
 const user = ref(null)
 const theme = ref('light')
 const isReady = ref(false)
 
-onMounted(() => {
-  if (tg) {
-    user.value = tg.initDataUnsafe?.user || null
+function log(...args) {
+  // eslint-disable-next-line no-console
+  console.log('[TelegramWebApp]', ...args)
+}
+
+function initTelegram() {
+  if (window.Telegram && window.Telegram.WebApp) {
+    tg = window.Telegram.WebApp
+    try {
+      tg.ready()
+    } catch (e) {
+      log('Error calling tg.ready()', e)
+    }
+    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+      user.value = tg.initDataUnsafe.user
+    } else {
+      log('No user in initDataUnsafe:', tg.initDataUnsafe)
+    }
     theme.value = tg.colorScheme || 'light'
     isReady.value = true
-    console.log(tg.initDataUnsafe)
+  } else {
+    log('Telegram WebApp not found. window.Telegram:', window.Telegram)
   }
-})
+}
 
 export function useTelegram() {
+  if (!isReady.value) {
+    initTelegram()
+  }
   return { tg, user, theme, isReady }
 } 

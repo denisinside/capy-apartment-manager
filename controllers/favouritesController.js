@@ -3,6 +3,7 @@ import favouritesService from '../services/favouritesService.js';
 export const addToFavourites = async (req, res) => {
     try {
         const { userId, apartmentId } = req.body;
+
         
         if (!userId || !apartmentId) {
             return res.status(400).json({
@@ -11,7 +12,7 @@ export const addToFavourites = async (req, res) => {
             });
         }
 
-        const favourites = await favouritesService.addToFavourites(userId, apartmentId);
+        const favourites = await favouritesService.addFavourite(userId, apartmentId);
         
         res.status(201).json({
             success: true,
@@ -30,7 +31,7 @@ export const addToFavourites = async (req, res) => {
 export const removeFromFavourites = async (req, res) => {
     try {
         const { userId, apartmentId } = req.params;
-        await favouritesService.removeFromFavourites(userId, apartmentId);
+        await favouritesService.removeFavourite(userId, apartmentId);
         
         res.json({
             success: true,
@@ -50,7 +51,7 @@ export const getFavourites = async (req, res) => {
     try {
         const { userId } = req.params;
         const favourites = await favouritesService.getFavourites(userId);
-        
+        console.log('getFavourites', userId, favourites);
         res.json({
             success: true,
             data: favourites

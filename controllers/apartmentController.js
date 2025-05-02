@@ -21,7 +21,7 @@ export const getApartments = async (req, res) => {
             noCommission: noCommission === 'true',
         };
 
-        console.log('Subscription Options:', JSON.stringify(subscriptionOptions, null, 2));
+        //console.log('Subscription Options:', JSON.stringify(subscriptionOptions, null, 2));
         
         const apartments = await apartmentService.getApartments({
             subscriptionOptions

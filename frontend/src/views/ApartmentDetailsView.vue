@@ -48,6 +48,14 @@
         <span class="dot">•</span>
         <span>поверх {{ apartment.characteristics.floor }} з {{ apartment.characteristics.max_floor }}</span>
       </div>
+      <div v-if="(apartment.infrastructure.landmarks && apartment.infrastructure.landmarks.length) || apartment.infrastructure.residential_complex" class="landmarks-block">
+        <div v-for="(landmark, index) in apartment.infrastructure.landmarks" :key="index" class="landmark">
+          {{ landmark }}
+        </div>
+        <div v-if="apartment.infrastructure.residential_complex" class="residential-complex">
+          ЖК: {{ apartment.infrastructure.residential_complex }}
+        </div>
+      </div>
       <div class="permits-row">
         <div class="permit-card">
           <span class="permit-icon">🐱</span>
@@ -71,6 +79,29 @@
       </div>
       <div class="description-block">
         <p>{{ apartment.description.advert_description }}</p>
+      </div>
+      <div v-if="priceHistory.length && priceHistory.length > 1" class="price-history-block">
+        <h3 class="price-history-title">Історія зміни ціни</h3>
+        <table class="price-history-table">
+          <tbody>
+            <tr v-for="(change, index) in priceHistory" :key="index">
+              <td class="ph-date">
+                <span v-if="index === 0 && isYesterday(change.timestamp)">вчора</span>
+                <span v-else>{{ formatDate(change.timestamp) }}</span>
+              </td>
+              <td class="ph-diff">
+                <template v-if="index < priceHistory.length - 1">
+                  <span :class="priceDiffClass(change, priceHistory[index+1])">
+                    {{ priceDiffText(change, priceHistory[index+1]) }}
+                  </span>
+                </template>
+              </td>
+              <td class="ph-price">
+                <b>{{ change.price_number.toLocaleString() }}</b> <span class="ph-currency">{{ currencySymbol.value }}</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
       <div class="rieltor-block">
         <img v-if="apartment.rieltor.photo" :src="apartment.rieltor.photo" class="rieltor-photo" />
@@ -115,6 +146,7 @@ const liked = ref(false)
 const galleryIndex = ref(0)
 const showPhotoModal = ref(false)
 const modalPhotoIndex = ref(0)
+const priceHistory = ref([])
 
 // Для свайпів у галереї
 const galleryTouchStartX = ref(0)
@@ -129,7 +161,9 @@ onMounted(async () => {
   try {
     const res = await fetchApartmentById(id)
     if (res.success) {
-      apartment.value = res.data.apartment || res.data
+      const data = res.data
+      apartment.value = data.apartment || data
+      priceHistory.value = data.price_history || []
       liked.value = store.favourites.includes(apartment.value._id)
     }
   } catch (e) {
@@ -211,7 +245,7 @@ function prevModalPhoto() {
     modalPhotoIndex.value = apartment.value.photo.length - 1
   }
 }
-// --- Свайпи для галереї ---
+// --- Свайпы для галереї ---
 function touchStartGallery(e) {
   galleryTouchStartX.value = e.changedTouches[0].screenX
 }
@@ -227,7 +261,7 @@ function touchEndGallery(e) {
     prevPhoto()
   }
 }
-// --- Свайпи для модалки ---
+// --- Свайпы для модалки ---
 function touchStartModal(e) {
   modalTouchStartX.value = e.changedTouches[0].screenX
 }
@@ -257,6 +291,33 @@ function toggleLike() {
 
 function goBack() {
   router.back()
+}
+
+function formatDate(ts) {
+  const d = new Date(ts)
+  return d.toLocaleDateString('uk-UA')
+}
+function isYesterday(ts) {
+  const d = new Date(ts)
+  const now = new Date()
+  const yesterday = new Date(now)
+  yesterday.setDate(now.getDate() - 1)
+  return d.getDate() === yesterday.getDate() && d.getMonth() === yesterday.getMonth() && d.getFullYear() === yesterday.getFullYear()
+}
+function priceDiff(change, prev) {
+  return change.price_number - prev.price_number
+}
+function priceDiffText(change, prev) {
+  const diff = priceDiff(change, prev)
+  if (diff === 0) return ''
+  const sign = diff > 0 ? '+' : '-'
+  return `${sign} ${Math.abs(diff).toLocaleString()} ${currencySymbol.value} ${diff > 0 ? '▲' : '▼'}`
+}
+function priceDiffClass(change, prev) {
+  const diff = priceDiff(change, prev)
+  if (diff > 0) return 'ph-up'
+  if (diff < 0) return 'ph-down'
+  return ''
 }
 </script>
 
@@ -443,10 +504,15 @@ function goBack() {
   margin-bottom: 8px;
 }
 .rieltor-block {
+  position: sticky;
+  bottom: 0;
+  background: #fff;
+  padding: 12px 18px;
+  z-index: 10;
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 0;
 }
 .rieltor-photo {
   width: 44px;
@@ -613,5 +679,73 @@ function goBack() {
 }
 .fav-btn.liked span {
   color: #e74c3c;
+}
+.landmarks-block {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.landmark, .residential-complex {
+  background: #f5f0f0;
+  border-radius: 16px;
+  padding: 6px 12px;
+  font-size: 14px;
+  color: #444;
+}
+.price-history-block {
+  margin: 24px 0 0 0;
+  color: #222;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  padding: 0 0 0 0;
+}
+.price-history-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  padding: 0 0 0 0;
+}
+.price-history-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 1.1rem;
+}
+.price-history-table tr {
+  border-bottom: 1px solid #ececec;
+}
+.price-history-table tr:last-child {
+  border-bottom: none;
+}
+.ph-date {
+  color: #888;
+  padding: 8px 0 8px 0;
+  min-width: 110px;
+  font-size: 1rem;
+}
+.ph-diff {
+  min-width: 120px;
+  font-weight: 600;
+  font-size: 1.1rem;
+  text-align: left;
+}
+.ph-up {
+  color: #e74c3c;
+}
+.ph-down {
+  color: #27ae60;
+}
+.ph-price {
+  font-weight: 700;
+  font-size: 1.2rem;
+  text-align: right;
+  min-width: 120px;
+}
+.ph-currency {
+  font-weight: 500;
+  font-size: 1rem;
+  color: #222;
 }
 </style> 

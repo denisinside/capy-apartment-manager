@@ -75,75 +75,54 @@ export async function fetchAgencies(city) {
 // --- API для обраних квартир ---
 
 export async function fetchFavourites(userId) {
-  const res = await fetch(`/api/favourites/${userId}`, { headers: defaultHeaders });
+  const res = await fetch(`/api/favourites/${userId}/`, { headers: defaultHeaders });
   if (!res.ok) throw new Error('Failed to fetch favourites');
   return res.json();
 }
 
 export async function addToFavourites(userId, apartmentId) {
-  const res = await fetch(`/api/favourites`, {
+  const res = await fetch(`/api/favourites/`, {
     method: 'POST',
     headers: defaultHeaders,
     body: JSON.stringify({ userId, apartmentId })
   });
   if (!res.ok) throw new Error('Failed to add to favourites');
-  // --- Telegram Storage ---
-  try {
-    const store = useFavouritesStore();
-    store.addFavourite(apartmentId);
-  } catch {}
   return res.json();
 }
 
 export async function removeFromFavourites(userId, apartmentId) {
-  const res = await fetch(`/api/favourites/${userId}/${apartmentId}`, { 
+  const res = await fetch(`/api/favourites/${userId}/${apartmentId}/`, { 
     method: 'DELETE',
     headers: defaultHeaders
   });
   if (!res.ok) throw new Error('Failed to remove from favourites');
-  // --- Telegram Storage ---
-  try {
-    const store = useFavouritesStore();
-    store.removeFavourite(apartmentId);
-  } catch {}
   return res.json();
 }
 
 // --- API для підписок ---
 
 export async function fetchSubscriptions(userId) {
-  const res = await fetch(`/api/subscriptions/${userId}`, { headers: defaultHeaders });
+  const res = await fetch(`/api/subscriptions/${userId}/`, { headers: defaultHeaders });
   if (!res.ok) throw new Error('Failed to fetch subscriptions');
   return res.json();
 }
 
 export async function createSubscription(userId, subscriptionOptions) {
-  const res = await fetch(`/api/subscriptions`, {
+  const res = await fetch(`/api/subscriptions/`, {
     method: 'POST',
     headers: defaultHeaders,
     body: JSON.stringify({ userId, subscriptionOptions })
   });
   if (!res.ok) throw new Error('Failed to create subscription');
-  const data = await res.json();
-  // --- Telegram Storage ---
-  try {
-    const store = useSubscriptionsStore();
-    store.addSubscription(data.data); // data.data — створена підписка
-  } catch {}
-  return data;
+  return res.json();
 }
 
 export async function deleteSubscription(subscriptionId) {
-  const res = await fetch(`/api/subscriptions/${subscriptionId}`, { 
+  const res = await fetch(`/api/subscriptions/${subscriptionId}/`, { 
     method: 'DELETE',
     headers: defaultHeaders
   });
   if (!res.ok) throw new Error('Failed to delete subscription');
-  // --- Telegram Storage ---
-  try {
-    const store = useSubscriptionsStore();
-    store.removeSubscription(subscriptionId);
-  } catch {}
   return res.json();
 }
 

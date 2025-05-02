@@ -5,24 +5,7 @@ class ApartmentService {
         subscriptionOptions
     }) {
         try {
-            // Перевіряємо всі квартири в базі
-            const allApartments = await Apartment.find({});
-            console.log('Total apartments in DB:', allApartments.length);
-            
-            // Перевіряємо квартири з is_active = true
-            const activeApartments = await Apartment.find({ is_active: true });
-            console.log('Active apartments:', activeApartments.length);
-            
-            // Перевіряємо квартири в Києві
-            const kyivApartments = await Apartment.find({ 'apartment.address.city': 'Київ' });
-            console.log('Apartments in Kyiv:', kyivApartments.length);
-            
-            // Перевіряємо всі унікальні міста в базі
-            const allCities = await Apartment.find({}, 'apartment.address.city');
-            const uniqueCities = [...new Set(allCities.map(apt => apt.apartment.address.city))];
-            console.log('Unique cities in DB:', uniqueCities);
-
-            console.log('Subscription Options:', JSON.stringify(subscriptionOptions, null, 2));
+            //console.log('Subscription Options:', JSON.stringify(subscriptionOptions, null, 2));
             
             if (!subscriptionOptions) {
                 return await Apartment.find();            
@@ -135,11 +118,11 @@ class ApartmentService {
                 query['apartment.permits.commission.commission_price.price_number'] = 0;
             }
 
-            console.log('MongoDB Query:', JSON.stringify(query, null, 2));
+            //console.log('MongoDB Query:', JSON.stringify(query, null, 2));
 
             const apartments = await Apartment.find(query);
 
-            console.log('Found apartments:', apartments.length);
+            //console.log('Found apartments:', apartments.length);
             
             return apartments;
         } catch (error) {

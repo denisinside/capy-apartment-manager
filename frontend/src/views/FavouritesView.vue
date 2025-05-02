@@ -79,6 +79,9 @@ function handleScroll() {
 }
 
 onMounted(async () => {
+  if (store.syncFromDBIfEmpty) {
+    await store.syncFromDBIfEmpty()
+  }
   await loadFavourites()
   window.addEventListener('scroll', handleScroll)
 })
@@ -87,6 +90,7 @@ onMounted(async () => {
 <style scoped>
 .favourites-view {
   min-height: 100vh;
+  min-width: 350px;
   background: #f8f8fa;
   padding-bottom: 80px;
 }
@@ -120,7 +124,8 @@ onMounted(async () => {
   color: #eab676;
 }
 .fav-list {
-  padding: 12px 8px 0 8px;
+  padding: 12px 0 0 0;
+  min-width: 350px;
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -140,6 +145,7 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   z-index: 2;
+  border-radius: 12px;
   letter-spacing: 2px;
 }
 .fade-fav-enter-active, .fade-fav-leave-active {

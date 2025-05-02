@@ -153,7 +153,6 @@ function touchEnd(e) {
   const touch = e.changedTouches[0]
   const diff = touchStartX.value - touch.screenX
   const tapDuration = Date.now() - tapStartTime
-  // Якщо свайп
   if (Math.abs(diff) > 50) {
     if (diff > 0) {
       nextPhoto()
@@ -163,7 +162,6 @@ function touchEnd(e) {
     swipeDetected = true
     return
   }
-  // Якщо це був короткий тап
   if (tapDuration < 300 && Math.abs(tapStartY - touch.clientY) < 10) {
     handlePhotoTap(tapStartX, e.target)
   }
@@ -171,9 +169,8 @@ function touchEnd(e) {
 }
 
 function onPhotoTap(e) {
-  // Для десктопу (click)
   if (photos.value.length <= 1) return
-  if (wasTouch) return // Якщо був touch, не обробляємо клік
+  if (wasTouch) return
   handlePhotoTap(e.offsetX, e.target)
 }
 
@@ -257,7 +254,8 @@ onMounted(() => {
   display: flex;
   width: 100%;
   height: 30vh;
-  min-height: 180px;
+  min-width: 350px;
+  min-height: 220px;
   max-height: 240px;
   background: #fff;
   border-radius: 12px;
