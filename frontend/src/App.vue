@@ -10,6 +10,9 @@
     <RouterLink to="/list" class="nav-item" title="Оголошення">
       <span>📋</span>
     </RouterLink>
+    <RouterLink to="/favourites" class="nav-item" title="Обране">
+      <span>❤️</span>
+    </RouterLink>
     <RouterLink to="/search" class="nav-item" title="Пошук">
       <span>🔍</span>
     </RouterLink>

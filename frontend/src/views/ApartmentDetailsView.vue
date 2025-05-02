@@ -1,6 +1,10 @@
 <template>
   <div class="details-view" v-if="apartment">
     <button class="back-btn" @click="goBack" aria-label="Повернутися назад">←</button>
+    <button class="fav-btn" :class="{ 'liked': liked }" @click.stop="toggleLike" @mousedown.stop @touchstart.stop>
+      <span v-if="liked">❤️</span>
+      <span v-else>🤍</span>
+    </button>
     <div 
       class="gallery" 
       @click="openPhotoModal(galleryIndex)"
@@ -101,10 +105,13 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchApartmentById } from '../api.js'
+import { useFavouritesStore } from '../stores/favourites'
 
 const route = useRoute()
 const router = useRouter()
 const apartment = ref(null)
+const store = useFavouritesStore()
+const liked = ref(false)
 const galleryIndex = ref(0)
 const showPhotoModal = ref(false)
 const modalPhotoIndex = ref(0)
@@ -123,6 +130,7 @@ onMounted(async () => {
     const res = await fetchApartmentById(id)
     if (res.success) {
       apartment.value = res.data.apartment || res.data
+      liked.value = store.favourites.includes(apartment.value._id)
     }
   } catch (e) {
     // handle error
@@ -236,6 +244,17 @@ function touchEndModal(e) {
   }
 }
 
+function toggleLike() {
+  if (!apartment.value) return
+  liked.value = !liked.value
+  const id = apartment.value._id
+  if (liked.value) {
+    store.addFavourite(id)
+  } else {
+    store.removeFavourite(id)
+  }
+}
+
 function goBack() {
   router.back()
 }
@@ -243,6 +262,7 @@ function goBack() {
 
 <style scoped>
 .details-view {
+  position: relative;
   max-width: 500px;
   margin: 0 auto;
   background: #fff;
@@ -579,5 +599,19 @@ function goBack() {
 }
 .back-btn:hover {
   background: rgba(240,240,240,0.9);
+}
+.fav-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  z-index: 20;
+  padding: 4px;
+}
+.fav-btn.liked span {
+  color: #e74c3c;
 }
 </style> 

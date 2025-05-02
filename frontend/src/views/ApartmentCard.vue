@@ -24,7 +24,7 @@
         <div v-if="photos.length > 1" class="photo-counter">
           {{ currentPhotoIndex + 1 }}/{{ photos.length }}
         </div>
-        <button class="like-btn" :class="{ 'liked': liked }" @click.stop="toggleLike">
+        <button class="like-btn" :class="{ 'liked': liked }" @click.stop="toggleLike" @mousedown.stop @touchstart.stop @touchmove.stop @touchend.stop>
           <svg width="24" height="24" viewBox="0 0 24 24">
             <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
           </svg>
@@ -70,12 +70,15 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useFavouritesStore } from '../stores/favourites'
 
 const props = defineProps({
-  apartment: { type: Object, required: true }
+  apartment: { type: Object, required: true },
+  isFavourite: { type: Boolean, default: undefined }
 })
 
 const router = useRouter()
+const store = useFavouritesStore()
 const liked = ref(false)
 const currentPhotoIndex = ref(0)
 const touchStartX = ref(0)
@@ -227,6 +230,11 @@ function closePhotoModal() {
 function toggleLike(e) {
   e.stopPropagation()
   liked.value = !liked.value
+  if (liked.value) {
+    store.addFavourite(props.apartment._id)
+  } else {
+    store.removeFavourite(props.apartment._id)
+  }
 }
 
 function goToDetails() {
@@ -234,6 +242,14 @@ function goToDetails() {
     router.push({ name: 'apartment-details', params: { id: props.apartment._id } })
   }
 }
+
+onMounted(() => {
+  if (props.isFavourite !== undefined) {
+    liked.value = props.isFavourite
+  } else {
+    liked.value = store.favourites.includes(props.apartment?._id)
+  }
+})
 </script>
 
 <style scoped>
