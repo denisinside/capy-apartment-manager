@@ -62,6 +62,16 @@ const router = createRouter({
       name: 'contracts',
       component: () => import('../views/ContractsView.vue'),
     },
+    {
+      path: '/rieltor/:name',
+      name: 'rieltor',
+      component: () => import('../views/RieltorView.vue'),
+    },
+    {
+      path: '/agency/:name',
+      name: 'agency',
+      component: () => import('../views/AgencyView.vue'),
+    },
   ],
 })
 

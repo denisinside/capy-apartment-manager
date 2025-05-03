@@ -5,16 +5,7 @@
       <span class="fav-sub">за твоїми запитами</span>
       <span class="fav-heart">❤️</span>
     </div>
-    <div class="fav-list">
-      <transition-group name="fade-fav" tag="div">
-        <div v-for="apt in visibleApartments" :key="apt._id" class="fav-card-wrapper" :class="{ 'inactive': !apt.is_active }" @click="handleCardClick(apt, $event)">
-          <ApartmentCard :apartment="apt.apartment" :is-favourite="true" />
-          <div v-if="!apt.is_active" class="sold-overlay-fav">ЗДАНО</div>
-        </div>
-      </transition-group>
-      <div v-if="loading" class="loading">Завантаження...</div>
-      <div v-if="!loading && apartments.length === 0" class="no-results">Немає обраних квартир</div>
-    </div>
+    <ApartmentList :apartments="visibleApartmentsForList" :loading="loading" empty-text="Немає обраних квартир" />
   </div>
 </template>
 
@@ -23,6 +14,7 @@ import { ref, computed, onMounted } from 'vue'
 import { fetchApartmentById } from '../api'
 import { useFavouritesStore } from '../stores/favourites'
 import ApartmentCard from './ApartmentCard.vue'
+import ApartmentList from '../components/ApartmentList.vue'
 
 const store = useFavouritesStore()
 const apartments = ref([])
@@ -34,6 +26,13 @@ const visibleApartments = computed(() =>
   apartments.value
     .filter(item => !removedIds.value.includes(item._id))
     .slice(0, visibleCount.value)
+)
+
+const visibleApartmentsForList = computed(() =>
+  visibleApartments.value.map(item => ({
+    ...item,
+    is_favourite: true
+  }))
 )
 
 async function loadFavourites() {
@@ -79,8 +78,8 @@ function handleScroll() {
 }
 
 onMounted(async () => {
-  if (store.syncFromDBIfEmpty) {
-    await store.syncFromDBIfEmpty()
+  if (store.syncFromDB) {
+    await store.syncFromDB()
   }
   await loadFavourites()
   window.addEventListener('scroll', handleScroll)
@@ -91,7 +90,6 @@ onMounted(async () => {
 .favourites-view {
   min-height: 100vh;
   min-width: 350px;
-  background: #f8f8fa;
   padding-bottom: 80px;
 }
 .fav-header {
@@ -123,47 +121,10 @@ onMounted(async () => {
   margin-left: auto;
   color: #eab676;
 }
-.fav-list {
-  padding: 12px 0 0 0;
-  min-width: 350px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-.fav-card-wrapper {
-  position: relative;
-  cursor: pointer;
-}
-.sold-overlay-fav {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.55);
-  color: #fff;
-  font-size: 2.2rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2;
-  border-radius: 12px;
-  letter-spacing: 2px;
-}
 .fade-fav-enter-active, .fade-fav-leave-active {
   transition: opacity 0.4s;
 }
 .fade-fav-enter-from, .fade-fav-leave-to {
   opacity: 0;
-}
-.loading {
-  text-align: center;
-  color: #b48c6e;
-  font-size: 1.1rem;
-  margin: 18px 0;
-}
-.no-results {
-  text-align: center;
-  color: #b00;
-  font-size: 1.1rem;
-  margin: 18px 0;
 }
 </style> 

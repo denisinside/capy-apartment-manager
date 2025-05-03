@@ -10,11 +10,7 @@
         </button>
       </div>
     </div>
-    <div class="apartment-list">
-      <ApartmentCard v-for="apt in visibleApartments" :key="apt._id" :apartment="apt.apartment" />
-      <div v-if="loading" class="loading">Завантаження...</div>
-      <div v-if="!loading && apartments.length === 0" class="no-results">Нічого не знайдено</div>
-    </div>
+    <ApartmentList :apartments="visibleApartments" :loading="loading" empty-text="Нічого не знайдено" />
   </div>
 </template>
 
@@ -22,7 +18,7 @@
 import { ref, onMounted, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchApartments, fetchSubscriptions, createSubscription, deleteSubscription } from '../api'
-import ApartmentCard from './ApartmentCard.vue'
+import ApartmentList from '../components/ApartmentList.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -167,23 +163,5 @@ watch(() => route.query, async () => {
 }
 .icon-btn svg {
   pointer-events: none;
-}
-.apartment-list {
-  padding: 12px 8px 0 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.loading {
-  text-align: center;
-  color: #b48c6e;
-  font-size: 1.1rem;
-  margin: 18px 0;
-}
-.no-results {
-  text-align: center;
-  color: #b00;
-  font-size: 1.1rem;
-  margin: 18px 0;
 }
 </style> 

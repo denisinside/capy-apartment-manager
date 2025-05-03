@@ -149,3 +149,25 @@ export const getAgencies = async (req, res) => {
         res.status(500).json({ success: false, message: 'Failed to get agencies', error: error.message });
     }
 };
+
+export const getApartmentsByRieltor = async (req, res) => {
+    try {
+        const { name } = req.query;
+        const apartments = await apartmentService.getApartmentsByRieltor(name);
+        res.json({ success: true, data: apartments });
+    } catch (error) {
+        console.error('Error in getApartmentsByRieltor:', error);
+        res.status(500).json({ success: false, message: 'Failed to get apartments by rieltor', error: error.message });
+    }
+};
+
+export const getApartmentsByAgency = async (req, res) => {
+    try {
+        const { name } = req.query;
+        const apartments = await apartmentService.getApartmentsByAgency(name);
+        res.json({ success: true, data: apartments });
+    } catch (error) {
+        console.error('Error in getApartmentsByAgency:', error);
+        res.status(500).json({ success: false, message: 'Failed to get apartments by agency', error: error.message });
+    }
+};

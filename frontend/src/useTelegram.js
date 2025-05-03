@@ -4,6 +4,7 @@ let tg = null
 const user = ref(null)
 const theme = ref('light')
 const isReady = ref(false)
+const startParam = ref(null)
 
 function log(...args) {
   // eslint-disable-next-line no-console
@@ -23,6 +24,7 @@ function initTelegram() {
     } else {
       log('No user in initDataUnsafe:', tg.initDataUnsafe)
     }
+    startParam.value = tg.initDataUnsafe?.start_param || null
     theme.value = tg.colorScheme || 'light'
     isReady.value = true
   } else {
@@ -30,9 +32,14 @@ function initTelegram() {
   }
 }
 
+function clearStartParam() {
+  startParam.value = null;
+  log('Start param cleared.');
+}
+
 export function useTelegram() {
   if (!isReady.value) {
     initTelegram()
   }
-  return { tg, user, theme, isReady }
+  return { tg, user, theme, isReady, startParam, clearStartParam }
 } 

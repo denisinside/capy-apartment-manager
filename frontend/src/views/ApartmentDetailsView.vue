@@ -1,6 +1,6 @@
 <template>
   <div class="details-view" v-if="apartment">
-    <button class="back-btn" @click="goBack" aria-label="Повернутися назад">←</button>
+    <BackButton />
     <button class="fav-btn" :class="{ 'liked': liked }" @click.stop="toggleLike" @mousedown.stop @touchstart.stop>
       <span v-if="liked">❤️</span>
       <span v-else>🤍</span>
@@ -49,10 +49,10 @@
         <span>поверх {{ apartment.characteristics.floor }} з {{ apartment.characteristics.max_floor }}</span>
       </div>
       <div v-if="(apartment.infrastructure.landmarks && apartment.infrastructure.landmarks.length) || apartment.infrastructure.residential_complex" class="landmarks-block">
-        <div v-for="(landmark, index) in apartment.infrastructure.landmarks" :key="index" class="landmark">
+        <div v-for="(landmark, index) in apartment.infrastructure.landmarks" :key="'lm'+index" class="landmark clickable" @click="goToLandmark(landmark)">
           {{ landmark }}
         </div>
-        <div v-if="apartment.infrastructure.residential_complex" class="residential-complex">
+        <div v-if="apartment.infrastructure.residential_complex" class="residential-complex clickable" @click="goToResidential(apartment.infrastructure.residential_complex)">
           ЖК: {{ apartment.infrastructure.residential_complex }}
         </div>
       </div>
@@ -103,17 +103,6 @@
           </tbody>
         </table>
       </div>
-      <div class="rieltor-block">
-        <img v-if="apartment.rieltor.photo" :src="apartment.rieltor.photo" class="rieltor-photo" />
-        <div>
-          <div class="rieltor-name">{{ apartment.rieltor.rieltor_name }}</div>
-          <div class="rieltor-position">Ріелтор</div>
-        </div>
-      </div>
-      <div class="actions-block">
-        <button class="call-btn">Набрати</button>
-        <button class="msg-btn">Написати</button>
-      </div>
     </div>
     <div v-if="showPhotoModal" class="photo-modal" @click.self="closePhotoModal"
       @touchstart="touchStartModal"
@@ -128,6 +117,24 @@
         <button v-if="apartment.photo.length > 1" class="modal-next" @click="nextModalPhoto">›</button>
       </div>
     </div>
+    <div class="rieltor-block-fixed">
+      <div class="rieltor-block-content">
+        <div class="rieltor-info" @click="goToRieltor">
+          <img v-if="apartment.rieltor.photo" :src="apartment.rieltor.photo" class="rieltor-photo" />
+          <div>
+            <div class="rieltor-name">{{ apartment.rieltor.rieltor_name }}</div>
+            <div class="rieltor-position">{{ apartment.rieltor.rieltor_position }}</div>
+          </div>
+        </div>
+        <div class="rieltor-agency clickable" v-if="apartment.rieltor.rieltor_agency" @click.stop="goToAgency">
+          {{ apartment.rieltor.rieltor_agency }}
+        </div>
+      </div>
+      <div class="actions-block">
+        <button class="call-btn" @click="callRieltor">Набрати</button>
+        <button class="msg-btn" @click="goToDetails">Детальніше</button>
+      </div>
+    </div>
   </div>
   <div v-else class="loading">Завантаження...</div>
 </template>
@@ -137,6 +144,8 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchApartmentById } from '../api.js'
 import { useFavouritesStore } from '../stores/favourites'
+import BackButton from '../components/BackButton.vue'
+import { useTelegram } from '../useTelegram'
 
 const route = useRoute()
 const router = useRouter()
@@ -147,6 +156,7 @@ const galleryIndex = ref(0)
 const showPhotoModal = ref(false)
 const modalPhotoIndex = ref(0)
 const priceHistory = ref([])
+const { tg } = useTelegram()
 
 // Для свайпів у галереї
 const galleryTouchStartX = ref(0)
@@ -289,10 +299,6 @@ function toggleLike() {
   }
 }
 
-function goBack() {
-  router.back()
-}
-
 function formatDate(ts) {
   const d = new Date(ts)
   return d.toLocaleDateString('uk-UA')
@@ -319,6 +325,44 @@ function priceDiffClass(change, prev) {
   if (diff < 0) return 'ph-down'
   return ''
 }
+function callRieltor() {
+  const phone = apartment.value?.rieltor?.rieltor_phone_number
+  if (!phone) return
+  navigator.clipboard.writeText(phone).then(() => {
+    if (window.Telegram?.WebApp?.showAlert) {
+      window.Telegram.WebApp.showAlert('Номер скопійовано: ' + phone)
+    } else {
+      alert('Номер скопійовано: ' + phone)
+    }
+    if (tg && tg.openLink) {
+      tg.openLink('tel:' + phone)
+    } else {
+      console.warn('WebApp.openLink is not available. Falling back to window.location.href')
+      window.location.href = 'tel:' + phone
+    }
+  }).catch(err => {
+     console.error("Failed to copy or open tel link:", err);
+     if (window.Telegram?.WebApp?.showAlert) {
+       window.Telegram.WebApp.showAlert('Не вдалося скопіювати номер або відкрити екран набору')
+     }
+  })
+}
+function goToDetails() {
+  const link = apartment.value?.link
+  if (link) window.open(link, '_blank')
+}
+function goToLandmark(landmark) {
+  router.push({ name: 'results', query: { city: apartment.value.address.city, landmarks: JSON.stringify([landmark]) } })
+}
+function goToResidential(residential) {
+  router.push({ name: 'results', query: { city: apartment.value.address.city, residentialComplexes: JSON.stringify([residential]) } })
+}
+function goToRieltor() {
+  router.push({ name: 'rieltor', params: { name: apartment.value.rieltor.rieltor_name } })
+}
+function goToAgency() {
+  router.push({ name: 'agency', params: { name: apartment.value.rieltor.rieltor_agency } })
+}
 </script>
 
 <style scoped>
@@ -329,7 +373,8 @@ function priceDiffClass(change, prev) {
   background: #fff;
   border-radius: 16px;
   box-shadow: 0 2px 16px rgba(0,0,0,0.08);
-  padding: 0 0 24px 0;
+  padding: 0 0 10px 0;
+  margin-bottom: 170px;
 }
 .gallery {
   width: 100%;
@@ -503,16 +548,33 @@ function priceDiffClass(change, prev) {
   color: #444;
   margin-bottom: 8px;
 }
-.rieltor-block {
-  position: sticky;
-  bottom: 0;
+.rieltor-block-fixed {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 50px;
   background: #fff;
-  padding: 12px 18px;
-  z-index: 10;
+  z-index: 100;
+  box-shadow: 0 -2px 12px #0001;
+  padding: 10px 18px 10px 18px;
+  border-radius: 16px 16px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+.rieltor-block-content {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
-  margin-bottom: 0;
+}
+.rieltor-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
 }
 .rieltor-photo {
   width: 44px;
@@ -529,6 +591,17 @@ function priceDiffClass(change, prev) {
 .rieltor-position {
   font-size: 13px;
   color: #888;
+}
+.rieltor-agency {
+  font-size: 15px;
+  color: #a05c3c;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: 12px;
+}
+.clickable {
+  cursor: pointer;
+  text-decoration: underline;
 }
 .actions-block {
   display: flex;
@@ -641,30 +714,6 @@ function priceDiffClass(change, prev) {
 }
 .modal-next {
   right: 16px;
-}
-.back-btn {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  z-index: 20;
-  background: rgba(240,240,240,0.7);
-  border: none;
-  border-radius: 12px;
-  width: 36px;
-  height: 36px;
-  font-size: 20px;
-  font-weight: bold;
-  color: #333;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.18s;
-  box-shadow: none;
-  padding: 0;
-}
-.back-btn:hover {
-  background: rgba(240,240,240,0.9);
 }
 .fav-btn {
   position: absolute;

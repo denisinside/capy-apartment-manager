@@ -217,6 +217,24 @@ class ApartmentService {
             throw error;
         }
     }
+
+    async getApartmentsByRieltor(name) {
+        try {
+            return await Apartment.find({ 'apartment.rieltor.rieltor_name': name });
+        } catch (error) {
+            console.error('Error fetching apartments by rieltor:', error);
+            throw error;
+        }
+    }
+
+    async getApartmentsByAgency(name) {
+        try {
+            return await Apartment.find({ 'apartment.rieltor.rieltor_agency': name });
+        } catch (error) {
+            console.error('Error fetching apartments by agency:', error);
+            throw error;
+        }
+    }
 }
 
 export { ApartmentService };

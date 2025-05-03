@@ -131,3 +131,15 @@ export async function fetchCities() {
   if (!res.ok) throw new Error('Failed to fetch cities');
   return res.json();
 }
+
+export async function fetchApartmentsByRieltor(rieltorName) {
+  const res = await fetch(`/api/apartments/by-rieltor?name=${encodeURIComponent(rieltorName)}`, { headers: defaultHeaders });
+  if (!res.ok) throw new Error('Failed to fetch apartments by rieltor');
+  return res.json();
+}
+
+export async function fetchApartmentsByAgency(agencyName) {
+  const res = await fetch(`/api/apartments/by-agency?name=${encodeURIComponent(agencyName)}`, { headers: defaultHeaders });
+  if (!res.ok) throw new Error('Failed to fetch apartments by agency');
+  return res.json();
+}

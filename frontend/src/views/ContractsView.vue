@@ -14,13 +14,13 @@
         ></iframe>
       </div>
       <div class="contracts-actions">
-        <a :href="pdfUrl" download class="contracts-btn pdf">
+        <button class="contracts-btn pdf" @click="downloadPDF">
           <span>⬇️ Завантажити PDF</span>
-        </a>
-        <a :href="docxUrl" download class="contracts-btn docx">
+        </button>
+        <button class="contracts-btn docx" @click="downloadDOCX">
           <span>⬇️ Завантажити DOC</span>
-        </a>
-        <button class="contracts-btn share" @click="shareFiles">
+        </button>
+        <button class="contracts-btn share" @click="shareContract">
           <span>📤 Поділитися</span>
         </button>
       </div>
@@ -47,9 +47,11 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useTelegram } from '../useTelegram'
 const pdfUrl = '/zrazok-dogovoru-orendy-zhytla.pdf'
 const docxUrl = '/zrazok-dogovoru-orendy-zhytla.docx'
 const openIdx = ref(null)
+const { tg, user } = useTelegram()
 const faqs = [
   {
     q: 'Що таке договір оренди (найму) житла чи квартири?',
@@ -75,14 +77,56 @@ const faqs = [
 function toggle(idx) {
   openIdx.value = openIdx.value === idx ? null : idx
 }
-function shareFiles() {
-  if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.shareFiles) {
-    window.Telegram.WebApp.shareFiles([
-      window.location.origin + pdfUrl,
-      window.location.origin + docxUrl
-    ])
+
+// Скачування PDF через Telegram WebApp або fallback
+function downloadPDF() {
+  const url = window.location.origin + pdfUrl
+  const filename = 'zrazok-dogovoru-orendy-zhytla.pdf'
+  if (tg?.downloadFile) {
+    tg.downloadFile({ url, file_name: filename }, (accepted) => {
+      console.log('download PDF accepted:', accepted)
+    })
   } else {
-    alert('Поділитися можна лише у Telegram Mini App')
+    const link = document.createElement('a')
+    link.href = pdfUrl
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+}
+
+// Скачування DOC через Telegram WebApp або fallback
+function downloadDOCX() {
+  const url = window.location.origin + docxUrl
+  const filename = 'zrazok-dogovoru-orendy-zhytla.docx'
+  if (tg?.downloadFile) {
+    tg.downloadFile({ url, file_name: filename }, (accepted) => {
+      console.log('download DOC accepted:', accepted)
+    })
+  } else {
+    const link = document.createElement('a')
+    link.href = docxUrl
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+}
+
+// Копіювання посилання на додаток в буфер обміну
+function shareContract() {
+  const linkToCopy = 'https://t.me/capy_flat_bot?startapp=contracts';
+  try {
+    navigator.clipboard.writeText(linkToCopy).then(() => {
+      tg.showAlert('Посилання скопійовано: ' + linkToCopy);
+    }, (err) => {
+      console.error('Could not copy text: ', err);
+      tg.showAlert('Не вдалося скопіювати посилання');
+    });
+  } catch (err) {
+    console.error('Fallback: Oops, unable to copy', err);
+    tg.showAlert('Не вдалося скопіювати посилання (помилка)');
   }
 }
 </script>
