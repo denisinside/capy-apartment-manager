@@ -117,6 +117,19 @@ export async function createSubscription(userId, subscriptionOptions) {
   return res.json();
 }
 
+export async function updateSubscription(subscriptionId, userId, subscriptionOptions) {
+  const res = await fetch(`/api/subscriptions/${subscriptionId}/`, {
+    method: 'PUT',
+    headers: defaultHeaders,
+    body: JSON.stringify({ userId, subscriptionOptions })
+  });
+  if (!res.ok) {
+      const errorData = await res.json().catch(() => ({})); // Спробувати отримати тіло помилки
+      throw new Error(errorData.message || 'Failed to update subscription');
+  }
+  return res.json();
+}
+
 export async function deleteSubscription(subscriptionId) {
   const res = await fetch(`/api/subscriptions/${subscriptionId}/`, { 
     method: 'DELETE',
@@ -141,5 +154,29 @@ export async function fetchApartmentsByRieltor(rieltorName) {
 export async function fetchApartmentsByAgency(agencyName) {
   const res = await fetch(`/api/apartments/by-agency?name=${encodeURIComponent(agencyName)}`, { headers: defaultHeaders });
   if (!res.ok) throw new Error('Failed to fetch apartments by agency');
+  return res.json();
+}
+
+// Отримати квартири на перегляд для користувача
+export async function getApartmentsForReview(userId) {
+  const res = await fetch(`/api/subscriptions/review/${userId}/`, { headers: defaultHeaders });
+  if (!res.ok) throw new Error('Failed to fetch apartments for review');
+  return res.json();
+}
+
+// Видалити квартиру зі списку сповіщень
+export async function removeNotifiedApartment(userId, apartmentId) {
+  const res = await fetch(`/api/subscriptions/review/${userId}/${apartmentId}/`, { 
+    method: 'DELETE',
+    headers: defaultHeaders 
+  });
+  if (!res.ok) throw new Error('Failed to remove notified apartment');
+  return res.json();
+}
+
+// Нова функція для отримання рієлторів за назвою агентства
+export async function fetchRieltorsByAgencyName(agencyName) {
+  const res = await fetch(`/api/apartments/agencies/${encodeURIComponent(agencyName)}/rieltors`, { headers: defaultHeaders });
+  if (!res.ok) throw new Error('Failed to fetch realtors by agency');
   return res.json();
 }

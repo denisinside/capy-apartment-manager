@@ -7,8 +7,8 @@
     <RouterLink to="/map" class="nav-item" title="Мапа">
       <span>🗺️</span>
     </RouterLink>
-    <RouterLink to="/list" class="nav-item" title="Оголошення">
-      <span>📋</span>
+    <RouterLink to="/new" class="nav-item" title="Нові">
+      <span>🔔</span>
     </RouterLink>
     <RouterLink to="/favourites" class="nav-item" title="Обране">
       <span>❤️</span>

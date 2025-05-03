@@ -8,7 +8,6 @@ function getTelegramStorageCity() {
     if (tg && tg.CloudStorage) {
       return tg.CloudStorage.getItem('city') || 'Київ';
     }
-    // fallback для localStorage, якщо тестуємо не в Telegram
     return localStorage.getItem('city') || 'Київ';
   } catch {
     return 'Київ';

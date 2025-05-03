@@ -80,13 +80,14 @@ class SubscriptionQueue {
         await sendApartmentsWithoutContext(bot, userId, newAds);
         console.log(`Sent ${newAds.length} ads to user ${userId}`);
 
-        for (const ad of newAds) {
-          await favouritesService.addFavourite(userId, ad.apartment._id);
-        }
+        const newAdIds = newAds.map(ad => ad._id.toString());
 
         await UserSubscription.updateOne(
           { _id: sub._id },
-          { $set: { lastNotifiedAt: now, updatedAt: now } }
+          {
+            $set: { lastNotifiedAt: now, updatedAt: now },
+            $push: { notifiedApartmentIds: { $each: newAdIds } } 
+          }
         );
       }
 

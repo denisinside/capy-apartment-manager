@@ -171,3 +171,15 @@ export const getApartmentsByAgency = async (req, res) => {
         res.status(500).json({ success: false, message: 'Failed to get apartments by agency', error: error.message });
     }
 };
+
+// Новий контролер для отримання рієлторів за агентством
+export const getRieltorsByAgency = async (req, res) => {
+    try {
+        const { agencyName } = req.params; // Беремо назву з параметрів маршруту
+        const realtors = await apartmentService.getRieltorsByAgency(agencyName);
+        res.json({ success: true, data: realtors });
+    } catch (error) {
+        console.error('Error in getRieltorsByAgency:', error);
+        res.status(500).json({ success: false, message: 'Failed to get realtors by agency', error: error.message });
+    }
+};

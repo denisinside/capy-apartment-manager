@@ -72,6 +72,16 @@ const router = createRouter({
       name: 'agency',
       component: () => import('../views/AgencyView.vue'),
     },
+    {
+      path: '/new',
+      name: 'NewApartments',
+      component: () => import('../views/NewApartments.vue'),
+    },
+    {
+      path: '/subscription-settings',
+      name: 'SubscriptionSettings',
+      component: () => import('../views/SubscriptionSettings.vue'),
+    },
   ],
 })
 

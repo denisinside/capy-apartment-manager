@@ -8,7 +8,7 @@
           <span>{{ filters.city || 'Оберіть місто' }}</span>
           <svg class="dropdown-arrow" width="20" height="20" viewBox="0 0 20 20"><path d="M5 8l5 5 5-5" stroke="#b48c6e" stroke-width="2" fill="none"/></svg>
           <ul v-if="showCityDropdown" class="dropdown-list">
-            <li v-for="city in cities || []" :key="city" @click.stop="selectCity(city)">{{ city }}</li>
+            <li v-for="city in cities.filter(c => c)" :key="city" @click.stop="selectCity(city)">{{ city }}</li>
           </ul>
         </div>
       </div>
@@ -18,34 +18,45 @@
           <button v-for="n in 5" :key="n" type="button" :class="{active: filters.rooms.includes(n)}" @click="toggleRoom(n)">{{ n }}</button>
         </div>
       </div>
-      <div class="form-row">
-        <label class="form-label">Ціна</label>
-        <div class="input-group">
-          <input v-model.number="filters.priceMin" type="number" placeholder="від" min="0" />
-          <input v-model.number="filters.priceMax" type="number" placeholder="до" min="0" />
-          <div class="custom-select small" @click="showCurrencyDropdown = !showCurrencyDropdown">
-            <span>{{ currencyLabel }}</span>
-            <svg class="dropdown-arrow" width="20" height="20" viewBox="0 0 20 20"><path d="M5 8l5 5 5-5" stroke="#b48c6e" stroke-width="2" fill="none"/></svg>
-            <ul v-if="showCurrencyDropdown" class="dropdown-list">
-              <li v-for="c in currencies" :key="c.value" @click.stop="selectCurrency(c.value)">{{ c.label }}</li>
-            </ul>
-          </div>
+      <div class="form-row slider-row">
+        <label class="form-label">Ціна ({{ currencyLabel }})</label>
+        <div class="slider-container">
+           <Slider 
+             v-model="filters.priceRange" 
+             :min="0" 
+             :max="100000" 
+             :step="1000" 
+             :format="formatPriceValue" 
+             showTooltip="always"
+             class="price-slider"/>
         </div>
       </div>
-      <div class="form-row">
+      <div class="form-row slider-row">
         <label class="form-label">Площа (м²)</label>
-        <div class="input-group">
-        <input v-model.number="filters.areaMin" type="number" placeholder="від" min="0" />
-        <input v-model.number="filters.areaMax" type="number" placeholder="до" min="0" />
-        </div>
-      </div>
-      <div class="form-row">
+         <div class="slider-container">
+           <Slider 
+             v-model="filters.areaRange" 
+             :min="10" 
+             :max="500" 
+             :step="5" 
+             :format="formatAreaValue"
+             showTooltip="always"
+             class="area-slider"/>
+         </div>
+       </div>
+      <div class="form-row slider-row">
         <label class="form-label">Поверх</label>
-        <div class="input-group">
-          <input v-model.number="filters.floorMin" type="number" placeholder="від" min="0" />
-          <input v-model.number="filters.floorMax" type="number" placeholder="до" min="0" />
-        </div>
-      </div>
+         <div class="slider-container">
+            <Slider 
+              v-model="filters.floorRange" 
+              :min="1" 
+              :max="50" 
+              :step="1"
+              :format="formatFloorValue"
+              showTooltip="always"
+              class="floor-slider"/>
+         </div>
+       </div>
       <div class="form-row multi-select-row">
         <label class="form-label">Район</label>
         <div class="multi-select" @click="showDistricts = !showDistricts">
@@ -98,55 +109,66 @@
           </ul>
         </div>
       </div>
-      <!-- Кнопки-фільтри з іконками -->
       <div class="form-row icon-filters-row">
         <button type="button" class="icon-filter-btn" :class="{active: filters.allowPets}" @click="filters.allowPets = !filters.allowPets">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M7.5 10.5C8.32843 10.5 9 9.82843 9 9C9 8.17157 8.32843 7.5 7.5 7.5C6.67157 7.5 6 8.17157 6 9C6 9.82843 6.67157 10.5 7.5 10.5Z" stroke="#5a5a5a" stroke-width="1.5"/><path d="M16.5 10.5C17.3284 10.5 18 9.82843 18 9C18 8.17157 17.3284 7.5 16.5 7.5C15.6716 7.5 15 8.17157 15 9C15 9.82843 15.6716 10.5 16.5 10.5Z" stroke="#5a5a5a" stroke-width="1.5"/><path d="M12 21C14.7614 21 17 18.7614 17 16C17 13.2386 14.7614 11 12 11C9.23858 11 7 13.2386 7 16C7 18.7614 9.23858 21 12 21Z" stroke="#5a5a5a" stroke-width="1.5"/><path d="M4 15C4 13.3431 5.34315 12 7 12" stroke="#5a5a5a" stroke-width="1.5"/><path d="M20 15C20 13.3431 18.6569 12 17 12" stroke="#5a5a5a" stroke-width="1.5"/></svg>
-          <span>Можна з тваринами</span>
+          <span class="btn-icon">🐾</span>
+          <span>З тваринами</span>
         </button>
         <button type="button" class="icon-filter-btn" :class="{active: filters.allowChildren}" @click="filters.allowChildren = !filters.allowChildren">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 12C14.2091 12 16 10.2091 16 8C16 5.79086 14.2091 4 12 4C9.79086 4 8 5.79086 8 8C8 10.2091 9.79086 12 12 12Z" stroke="#5a5a5a" stroke-width="1.5"/><path d="M4 20C4 16.6863 7.13401 14 11 14H13C16.866 14 20 16.6863 20 20" stroke="#5a5a5a" stroke-width="1.5"/></svg>
-          <span>Можна з дітьми</span>
+          <span class="btn-icon">👨‍👩‍👧‍👦</span>
+          <span>З дітьми</span>
         </button>
-        <button type="button" class="icon-filter-btn" :class="{active: filters.noCommission}" @click="filters.noCommission = !filters.noCommission">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 17V7C4 5.89543 4.89543 5 6 5H18C19.1046 5 20 5.89543 20 7V17C20 18.1046 19.1046 19 18 19H6C4.89543 19 4 18.1046 4 17Z" stroke="#5a5a5a" stroke-width="1.5"/><path d="M8 9H16" stroke="#5a5a5a" stroke-width="1.5"/><path d="M8 13H12" stroke="#5a5a5a" stroke-width="1.5"/></svg>
+        <button type="button" class="icon-filter-btn" :class="{active: filters.noCommission}" @click="toggleNoCommission">
+          <span class="btn-icon">✅</span>
           <span>Без комісії</span>
         </button>
       </div>
-      <div class="form-row commission-row">
+      <div v-if="!filters.noCommission" class="form-row commission-row">
+         <label class="form-label">Комісія (%)</label>
         <div class="input-group commission-group">
-          <input v-model.number="filters.commissionMin" type="number" placeholder="Комісія від" min="0" />
-          <input v-model.number="filters.commissionMax" type="number" placeholder="до" min="0" />
+          <input v-model.number="filters.commissionRateMin" type="number" placeholder="від" min="0" />
+          <input v-model.number="filters.commissionRateMax" type="number" placeholder="до" min="0" />
         </div>
       </div>
       <div v-if="validationErrors.length" class="validation-errors">
         <div v-for="err in validationErrors" :key="err" class="validation-error">{{ err }}</div>
-    </div>
-      <button class="search-btn" type="submit">Знайти</button>
+      </div>
+      <button class="search-btn" type="submit" :disabled="isLoading">{{ submitButtonText }}</button>
     </form>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { fetchCities, fetchDistricts, fetchSubwayStations, fetchResidentialComplexes, fetchLandmarks, fetchRieltors, fetchAgencies } from '../api'
+import Slider from '@vueform/slider'
+import { fetchCities, fetchDistricts, fetchSubwayStations, fetchResidentialComplexes, fetchLandmarks, fetchRieltors, fetchAgencies, createSubscription, updateSubscription } from '../api'
 import { useCityStore } from '../stores/city'
+import { useTelegram } from '../useTelegram'
+import { useSubscriptionsStore } from '../stores/subscriptions'
+
+import '@vueform/slider/themes/default.css'
 
 const router = useRouter()
 const route = useRoute()
 const cityStore = useCityStore()
+const { user, tg } = useTelegram()
+const subscriptionsStore = useSubscriptionsStore()
+
+const userId = user?.value?.id || 'test-user'
+
+const editingSubscriptionId = computed(() => route.query.editingSubscriptionId)
+const isEditing = computed(() => !!editingSubscriptionId.value)
+
+const defaultCity = 'Київ';
 
 const filters = ref({
-  city: cityStore.city,
+  city: cityStore.city || defaultCity,
   rooms: [],
-  priceMin: '',
-  priceMax: '',
+  priceRange: [0, 70000],
   currency: 'Uah',
-  areaMin: '',
-  areaMax: '',
-  floorMin: '',
-  floorMax: '',
+  areaRange: [20, 200],
+  floorRange: [1, 25],
   districts: [],
   subwayStations: [],
   residentialComplexes: [],
@@ -157,8 +179,8 @@ const filters = ref({
   allowChildren: false,
   bargain: false,
   noCommission: false,
-  commissionMin: '',
-  commissionMax: ''
+  commissionRateMin: '',
+  commissionRateMax: ''
 })
 
 const cities = ref([])
@@ -170,7 +192,6 @@ const rieltors = ref([])
 const agencies = ref([])
 
 const showCityDropdown = ref(false)
-const showCurrencyDropdown = ref(false)
 const showDistricts = ref(false)
 const showSubway = ref(false)
 const showComplexes = ref(false)
@@ -186,42 +207,44 @@ const currencies = [
 const currencyLabel = computed(() => currencies.find(c => c.value === filters.value.currency)?.label || 'грн')
 
 const validationErrors = ref([])
+const isLoading = ref(false)
+const submitButtonText = computed(() => isEditing.value ? 'Зберегти підписку' : 'Знайти квартири')
+
+const formatPriceValue = (value) => {
+  return `${Math.round(value).toLocaleString('uk-UA')}`;
+};
+const formatAreaValue = (value) => {
+  return `${Math.round(value)} м²`;
+};
+const formatFloorValue = (value) => {
+  return `${Math.round(value)}`;
+};
 
 function validateForm() {
   validationErrors.value = []
-  // Ціна
-  if (filters.value.priceMin < 0) validationErrors.value.push('Мінімальна ціна не може бути відʼємною')
-  if (filters.value.priceMax < 0) validationErrors.value.push('Максимальна ціна не може бути відʼємною')
-  if (filters.value.priceMin && filters.value.priceMax && filters.value.priceMin > filters.value.priceMax) validationErrors.value.push('Мінімальна ціна не може бути більшою за максимальну')
-  // Площа
-  if (filters.value.areaMin < 0) validationErrors.value.push('Мінімальна площа не може бути відʼємною')
-  if (filters.value.areaMax < 0) validationErrors.value.push('Максимальна площа не може бути відʼємною')
-  if (filters.value.areaMin && filters.value.areaMax && filters.value.areaMin > filters.value.areaMax) validationErrors.value.push('Мінімальна площа не може бути більшою за максимальну')
-  // Поверх
-  if (filters.value.floorMin < 0) validationErrors.value.push('Мінімальний поверх не може бути відʼємним')
-  if (filters.value.floorMax < 0) validationErrors.value.push('Максимальний поверх не може бути відʼємним')
-  if (filters.value.floorMin && filters.value.floorMax && filters.value.floorMin > filters.value.floorMax) validationErrors.value.push('Мінімальний поверх не може бути більшим за максимальний')
-  // Комісія
-  if (filters.value.commissionMin < 0) validationErrors.value.push('Мінімальна комісія не може бути відʼємною')
-  if (filters.value.commissionMax < 0) validationErrors.value.push('Максимальна комісія не може бути відʼємною')
-  if (filters.value.commissionMin && filters.value.commissionMax && filters.value.commissionMin > filters.value.commissionMax) validationErrors.value.push('Мінімальна комісія не може бути більшою за максимальну')
+  if (!filters.value.noCommission) {
+    if (filters.value.commissionRateMin < 0) validationErrors.value.push('Мінімальна комісія не може бути відʼємною')
+    if (filters.value.commissionRateMax < 0) validationErrors.value.push('Максимальна комісія не може бути відʼємною')
+    if (filters.value.commissionRateMin && filters.value.commissionRateMax && filters.value.commissionRateMin > filters.value.commissionRateMax) validationErrors.value.push('Мінімальна комісія не може бути більшою за максимальну')
+  }
   return validationErrors.value.length === 0
 }
 
 async function selectCity(city) {
+  if (!city) {
+      showCityDropdown.value = false;
+      return;
+  }
   filters.value.city = city
+  cityStore.setCity(city)
   showCityDropdown.value = false
   await fetchAllOptions()
-  // Скидаємо залежні фільтри після оновлення довідників
   filters.value.districts = []
   filters.value.subwayStations = []
   filters.value.residentialComplexes = []
   filters.value.landmarks = []
 }
-function selectCurrency(val) {
-  filters.value.currency = val
-  showCurrencyDropdown.value = false
-}
+
 function toggleRoom(n) {
   const idx = filters.value.rooms.indexOf(n)
   if (idx === -1) filters.value.rooms.push(n)
@@ -239,8 +262,20 @@ function removeTag(field, value) {
   if (idx !== -1) arr.splice(idx, 1)
 }
 
+function toggleNoCommission() {
+    filters.value.noCommission = !filters.value.noCommission;
+    if (filters.value.noCommission) {
+        filters.value.commissionRateMin = '';
+        filters.value.commissionRateMax = '';
+    }
+}
+
 async function fetchAllOptions() {
-  const selectedCity = filters.value.city;
+  const selectedCity = filters.value.city || defaultCity;
+  if (!filters.value.city) {
+      filters.value.city = defaultCity;
+  }
+  
   [
     districts.value,
     subwayStations.value,
@@ -259,98 +294,222 @@ async function fetchAllOptions() {
 }
 
 onMounted(async () => {
-  // Перевірка CloudStorage
   const tg = window.Telegram?.WebApp;
   if (!(tg && tg.CloudStorage)) {
     alert('CloudStorage доступний лише у Telegram 6.1+ (WebView). Дані зберігаються лише локально.');
   }
-  const res = await fetchCities()
-  cities.value = res.data || []
-  if (!filters.value.city && cities.value.length) filters.value.city = cities.value[0]
+  try {
+      const res = await fetchCities();
+      cities.value = (res.data || []).filter(c => c);
+  } catch (error) {
+      console.error("Failed to fetch cities:", error);
+      cities.value = [defaultCity];
+  }
+  
+  const queryCity = route.query.city;
+  if (queryCity && cities.value.includes(queryCity)) {
+      filters.value.city = queryCity;
+  } else if (!filters.value.city || !cities.value.includes(filters.value.city)) {
+      filters.value.city = defaultCity;
+  }
+  cityStore.setCity(filters.value.city);
+  
   await fetchAllOptions()
 
-  // --- Встановлення фільтрів із query ---
   const q = route.query
-  if (q.city) filters.value.city = q.city
+  
   if (q.price) {
-    try {
-      const p = JSON.parse(q.price)
-      filters.value.priceMin = p.min || ''
-      filters.value.priceMax = p.max || ''
-      filters.value.currency = p.currency || 'Uah'
-    } catch {}
+      try {
+          const p = JSON.parse(q.price)
+          filters.value.priceRange = [p.min ?? filters.value.priceRange[0], p.max ?? filters.value.priceRange[1]];
+          filters.value.currency = p.currency || 'Uah'
+      } catch { /* ігноруємо помилку парсингу */ }
   }
   if (q.area) {
-    try {
-      const a = JSON.parse(q.area)
-      filters.value.areaMin = a.min || ''
-      filters.value.areaMax = a.max || ''
-    } catch {}
+      try {
+          const a = JSON.parse(q.area)
+          filters.value.areaRange = [a.min ?? filters.value.areaRange[0], a.max ?? filters.value.areaRange[1]];
+      } catch {}
+  }
+   if (q.floor) {
+      try {
+          const f = JSON.parse(q.floor)
+          filters.value.floorRange = [f.min ?? filters.value.floorRange[0], f.max ?? filters.value.floorRange[1]];
+      } catch {}
   }
   if (q.commission) {
-    try {
-      const c = JSON.parse(q.commission)
-      filters.value.commissionMin = c.min || ''
-      filters.value.commissionMax = c.max || ''
-    } catch {}
+      try {
+          const c = JSON.parse(q.commission)
+          filters.value.commissionRateMin = c.rate || c.min || '';
+          filters.value.commissionRateMax = c.max || '';
+      } catch {}
   }
-  if (q.rooms) {
-    try { filters.value.rooms = JSON.parse(q.rooms) } catch {}
-  }
-  if (q.districts) {
-    try { filters.value.districts = JSON.parse(q.districts) } catch {}
-  }
-  if (q.subwayStations) {
-    try { filters.value.subwayStations = JSON.parse(q.subwayStations) } catch {}
-  }
-  if (q.residentialComplexes) {
-    try { filters.value.residentialComplexes = JSON.parse(q.residentialComplexes) } catch {}
-  }
-  if (q.landmarks) {
-    try { filters.value.landmarks = JSON.parse(q.landmarks) } catch {}
-  }
+  if (q.rooms) { try { filters.value.rooms = JSON.parse(q.rooms) } catch {} }
+  if (q.districts) { try { filters.value.districts = JSON.parse(q.districts) } catch {} }
+  if (q.subwayStations) { try { filters.value.subwayStations = JSON.parse(q.subwayStations) } catch {} }
+  if (q.residentialComplexes) { try { filters.value.residentialComplexes = JSON.parse(q.residentialComplexes) } catch {} }
+  if (q.landmarks) { try { filters.value.landmarks = JSON.parse(q.landmarks) } catch {} }
   if (q.allowPets) filters.value.allowPets = q.allowPets === 'true'
   if (q.allowChildren) filters.value.allowChildren = q.allowChildren === 'true'
   if (q.bargain) filters.value.bargain = q.bargain === 'true'
-  if (q.noCommission) filters.value.noCommission = q.noCommission === 'true'
+  if (q.noCommission) {
+      filters.value.noCommission = q.noCommission === 'true';
+      if (filters.value.noCommission) {
+           filters.value.commissionRateMin = '';
+           filters.value.commissionRateMax = '';
+      }
+  }
 })
 
-function onSearch() {
+async function onSearch() {
   if (!validateForm()) return
-  const query = {}
-  // Формуємо price
-  query.price = JSON.stringify({
-    min: filters.value.priceMin || undefined,
-    max: filters.value.priceMax || undefined,
-    currency: filters.value.currency || 'Uah'
-  })
-  // Формуємо area
-  query.area = JSON.stringify({
-    min: filters.value.areaMin || undefined,
-    max: filters.value.areaMax || undefined
-  })
-  // Формуємо commission
-  query.commission = JSON.stringify({
-    min: filters.value.commissionMin || undefined,
-    max: filters.value.commissionMax || undefined
-  })
-  // Масиви
-  if (filters.value.rooms.length) query.rooms = JSON.stringify(filters.value.rooms)
-  if (filters.value.districts.length) query.districts = JSON.stringify(filters.value.districts)
-  if (filters.value.subwayStations.length) query.subwayStations = JSON.stringify(filters.value.subwayStations)
-  if (filters.value.residentialComplexes.length) query.residentialComplexes = JSON.stringify(filters.value.residentialComplexes)
-  if (filters.value.landmarks.length) query.landmarks = JSON.stringify(filters.value.landmarks)
-  // Булеві
-  query.allowPets = String(!!filters.value.allowPets)
-  query.allowChildren = String(!!filters.value.allowChildren)
-  query.bargain = String(!!filters.value.bargain)
-  if (filters.value.noCommission) query.noCommission = 'true'
-  // Місто
-  if (filters.value.city) query.city = filters.value.city
-  // Відправляємо
-  router.push({ name: 'results', query })
+
+  const subscriptionOptions = {
+      city: filters.value.city,
+      price: {
+          min: filters.value.priceRange[0] > 0 ? filters.value.priceRange[0] : undefined,
+          max: filters.value.priceRange[1] < 100000 ? filters.value.priceRange[1] : undefined,
+          currency: filters.value.currency || 'Uah'
+      },
+      area: {
+          min: filters.value.areaRange[0] > 10 ? filters.value.areaRange[0] : undefined,
+          max: filters.value.areaRange[1] < 500 ? filters.value.areaRange[1] : undefined,
+      },
+      floor: {
+          min: filters.value.floorRange[0] > 1 ? filters.value.floorRange[0] : undefined,
+          max: filters.value.floorRange[1] < 50 ? filters.value.floorRange[1] : undefined,
+      },
+      rooms: filters.value.rooms.length ? filters.value.rooms : undefined,
+      districts: filters.value.districts.length ? filters.value.districts : undefined,
+      subwayStations: filters.value.subwayStations.length ? filters.value.subwayStations : undefined,
+      residentialComplexes: filters.value.residentialComplexes.length ? filters.value.residentialComplexes : undefined,
+      landmarks: filters.value.landmarks.length ? filters.value.landmarks : undefined,
+      allowPets: filters.value.allowPets || undefined,
+      allowChildren: filters.value.allowChildren || undefined,
+      bargain: filters.value.bargain || undefined,
+      commissionRate: filters.value.noCommission ? 0 : (filters.value.commissionRateMin || undefined),
+  };
+
+  if (filters.value.noCommission) {
+      subscriptionOptions.commissionRate = 0;
+  }
+
+  Object.keys(subscriptionOptions).forEach(key => {
+      if (subscriptionOptions[key] === undefined) {
+          delete subscriptionOptions[key];
+      } else if (typeof subscriptionOptions[key] === 'object' && subscriptionOptions[key] !== null && !Array.isArray(subscriptionOptions[key])) {
+          let isEmpty = true;
+          Object.keys(subscriptionOptions[key]).forEach(subKey => {
+              if (subscriptionOptions[key][subKey] !== undefined) {
+                  isEmpty = false;
+              } else {
+                  delete subscriptionOptions[key][subKey];
+              }
+          });
+          if (isEmpty) {
+              delete subscriptionOptions[key];
+          }
+      }
+  });
+
+  isLoading.value = true;
+  try {
+      if (isEditing.value) {
+          const result = await updateSubscription(editingSubscriptionId.value, userId, subscriptionOptions);
+          console.log('Subscription updated:', result);
+          await subscriptionsStore.syncFromDBIfEmpty();
+          if (tg && tg.showAlert) tg.showAlert('Підписку успішно оновлено!');
+          router.push({ name: 'SubscriptionSettings' });
+
+      } else {
+          const query = {};
+          Object.entries(subscriptionOptions).forEach(([key, value]) => {
+              if (value === undefined) return;
+              if (typeof value === 'boolean') {
+                  query[key] = String(value);
+              } else if (Array.isArray(value)) {
+                  query[key] = JSON.stringify(value);
+              } else if (typeof value === 'object' && value !== null) {
+                  if (key === 'commissionRate' && value === 0) {
+                     query.noCommission = 'true';
+                  } else {
+                     query[key] = JSON.stringify(value);
+                  }
+              } else {
+                  query[key] = String(value);
+              }
+          });
+          if (query.noCommission === 'true') delete query.commissionRate;
+
+          console.log("Search Query:", query);
+          router.push({ name: 'results', query });
+      }
+  } catch (error) {
+      console.error('Error during search/subscription operation:', error);
+      if (tg && tg.showAlert) tg.showAlert(`Помилка: ${error.message || 'Невідома помилка'}`);
+  } finally {
+      isLoading.value = false;
+  }
 }
 </script>
+
+<style>
+.slider-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.slider-container {
+    width: 100%;
+    padding: 0 5px;
+}
+
+.price-slider, .area-slider, .floor-slider {
+  --slider-connect-bg: #b48c6e; 
+  --slider-tooltip-bg: #b48c6e;
+  --slider-handle-ring-color: #eab67630;
+  --slider-handle-bg: #b48c6e;
+  --slider-handle-shadow: none;
+  --slider-handle-shadow-active: none;
+  --slider-handle-ring-width: 3px;
+  --slider-height: 6px;
+  --slider-handle-width: 16px;
+  --slider-handle-height: 16px;
+  margin-top: 10px;
+}
+
+.input-group input[type="number"] {
+  /* display: none; - Ховаємо, коли є повзунки */ 
+}
+
+.icon-filter-btn {
+  background: #ededed;
+  border-radius: 8px;
+  padding: 8px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  color: #444;
+  border: 1.5px solid #e0e0e0;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  font-size: 0.95rem;
+}
+
+.icon-filter-btn .btn-icon {
+    font-size: 1.3em;
+    line-height: 1;
+}
+
+.icon-filter-btn.active {
+  background: #eab676;
+  color: #fff;
+  border-color: #b48c6e;
+  box-shadow: 0 2px 5px rgba(180, 140, 110, 0.3);
+}
+</style>
 
 <style scoped>
 .search-view {
@@ -591,12 +750,18 @@ function onSearch() {
     max-width: 100vw;
   }
   .search-form {
-    padding: 10px 2px;
     gap: 12px;
   }
   .form-label {
     min-width: 70px;
     font-size: 0.97rem;
   }
+}
+
+/* Стиль для кнопки під час завантаження */
+.search-btn[disabled] {
+    background: #ccc;
+    cursor: not-allowed;
+    box-shadow: none;
 }
 </style> 

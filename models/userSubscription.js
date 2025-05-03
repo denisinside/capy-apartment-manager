@@ -25,6 +25,7 @@ const UserSubscriptionSchema = new mongoose.Schema({
     userId: { type: String, required: true },
     subscriptionOptions: { type: SubscriptionOptionsSchema, required: true },
     lastNotifiedAt:  { type: Date,   required: true, default: Date.now },
+    notifiedApartmentIds: { type: [String], default: [] },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }
 });

@@ -1,5 +1,5 @@
 import express from 'express';
-import { getApartments, getApartmentById, getCities, getDistricts, getSubwayStations, getResidentialComplexes, getLandmarks, getRieltors, getAgencies, getApartmentsByRieltor, getApartmentsByAgency } from '../controllers/apartmentController.js';
+import { getApartments, getApartmentById, getCities, getDistricts, getSubwayStations, getResidentialComplexes, getLandmarks, getRieltors, getAgencies, getApartmentsByRieltor, getApartmentsByAgency, getRieltorsByAgency } from '../controllers/apartmentController.js';
 
 const router = express.Router();
 
@@ -32,6 +32,9 @@ router.get('/by-rieltor', getApartmentsByRieltor);
 
 // GET /api/apartments/by-agency?name= - отримати квартири агенції
 router.get('/by-agency', getApartmentsByAgency);
+
+// GET /api/apartments/agencies/:agencyName/rieltors - отримати рієлторів за назвою агентства
+router.get('/agencies/:agencyName/rieltors', getRieltorsByAgency);
 
 // GET /api/apartments/:id - отримати оголошення за ID
 router.get('/:id', getApartmentById);

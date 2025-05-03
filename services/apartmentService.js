@@ -235,6 +235,39 @@ class ApartmentService {
             throw error;
         }
     }
+
+    // Новий метод для отримання рієлторів за назвою агентства
+    async getRieltorsByAgency(agencyName) {
+        try {
+            const apartments = await Apartment.find({ 'apartment.rieltor.rieltor_agency': agencyName });
+            if (!apartments || apartments.length === 0) {
+                return [];
+            }
+
+            const realtorsMap = new Map();
+            apartments.forEach(apt => {
+                const rieltor = apt.apartment?.rieltor;
+                if (rieltor && rieltor.rieltor_name) {
+                    // Використовуємо комбінацію ім'я+телефон як ключ, щоб уникнути дублікатів
+                    // Якщо телефону немає, використовуємо лише ім'я, але це менш надійно
+                    const key = rieltor.rieltor_phone_number ? `${rieltor.rieltor_name}_${rieltor.rieltor_phone_number}` : rieltor.rieltor_name;
+                    if (!realtorsMap.has(key)) {
+                        realtorsMap.set(key, {
+                            name: rieltor.rieltor_name,
+                            phone_number: rieltor.rieltor_phone_number,
+                            position: rieltor.rieltor_position 
+                            // Можна додати інші поля, якщо потрібно
+                        });
+                    }
+                }
+            });
+
+            return Array.from(realtorsMap.values());
+        } catch (error) {
+            console.error('Error fetching realtors by agency:', error);
+            throw error;
+        }
+    }
 }
 
 export { ApartmentService };
