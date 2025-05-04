@@ -5,20 +5,21 @@
       <span v-if="liked">❤️</span>
       <span v-else>🤍</span>
     </button>
-    <div 
-      class="gallery" 
+    <div
+      class="gallery"
       @click="openPhotoModal(galleryIndex)"
       @touchstart="touchStartGallery"
       @touchmove="touchMoveGallery"
       @touchend="touchEndGallery"
     >
       <img :src="apartment.photo[galleryIndex]" class="gallery-photo" />
-      <button 
-        class="share-btn-gallery" 
-        @click.stop="shareApartment" 
+      <button
+        class="share-btn-gallery"
+        @click.stop="shareApartment"
         :disabled="isSharingApartment"
-        @mousedown.stop 
+        @mousedown.stop
         @touchstart.stop
+        title="Поділитися цим оголошенням"
       >
         <svg v-if="!isSharingApartment" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 16.08C17.24 16.08 16.56 16.38 16.04 16.85L8.91 12.7C8.96 12.47 9 12.24 9 12C9 11.76 8.96 11.53 8.91 11.3L15.96 7.22C16.5 7.69 17.21 8 18 8C19.66 8 21 6.66 21 5C21 3.34 19.66 2 18 2C16.34 2 15 3.34 15 5C15 5.24 15.04 5.47 15.09 5.7L8.04 9.78C7.5 9.31 6.79 9 6 9C4.34 9 3 10.34 3 12C3 13.66 4.34 15 6 15C6.79 15 7.5 14.69 8.04 14.22L15.15 18.35C15.1 18.58 15.06 18.81 15.06 19.05C15.06 20.71 16.4 22.05 18.06 22.05C19.72 22.05 21.06 20.71 21.06 19.05C21.06 17.39 19.72 16.05 18.06 16.05H18V16.08Z" fill="white"/></svg>
         <span v-else>...</span>
@@ -30,7 +31,8 @@
       </div>
     </div>
     <div class="main-info">
-      <div class="top-row">
+      <!-- ... (решта блоку main-info) ... -->
+       <div class="top-row">
         <div class="address-block">
           <div class="street">{{ apartment.address.street }}{{ apartment.address.house_number ? ', ' + apartment.address.house_number : '' }}</div>
         </div>
@@ -107,14 +109,14 @@
                 </template>
               </td>
               <td class="ph-price">
-                <b>{{ change.price_number.toLocaleString() }}</b> <span class="ph-currency">{{ currencySymbol.value }}</span>
+                <b>{{ change.price_number.toLocaleString() }}</b> <span class="ph-currency">{{ currencySymbol }}</span>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
-    <div v-if="showPhotoModal" class="photo-modal" @click.self="closePhotoModal"
+     <div v-if="showPhotoModal" class="photo-modal" @click.self="closePhotoModal"
       @touchstart="touchStartModal"
       @touchmove="touchMoveModal"
       @touchend="touchEndModal"
@@ -129,21 +131,38 @@
     </div>
     <div class="rieltor-block-fixed">
       <div class="rieltor-block-content">
-        <div class="rieltor-info" @click="goToRieltor">
-          <img v-if="apartment.rieltor.photo" :src="apartment.rieltor.photo" class="rieltor-photo" />
-          <div>
-            <div class="rieltor-name">{{ apartment.rieltor.rieltor_name }}</div>
-            <div class="rieltor-position">{{ apartment.rieltor.rieltor_position }}</div>
+        <div class="rieltor-info-container">
+          <img v-if="apartment.rieltor.photo" :src="apartment.rieltor.photo" class="rieltor-photo" @click="goToRieltor"/>
+          <div class="rieltor-text-details">
+            <div class="rieltor-name" @click="goToRieltor">{{ apartment.rieltor.rieltor_name }}</div>
+            <div class="rieltor-subline">
+              <div class="rieltor-position">{{ apartment.rieltor.rieltor_position }}</div>
+              <div class="rieltor-agency clickable" v-if="apartment.rieltor.rieltor_agency" @click.stop="goToAgency">
+                {{ apartment.rieltor.rieltor_agency }}
+              </div>
+            </div>
           </div>
         </div>
-        <div class="rieltor-agency clickable" v-if="apartment.rieltor.rieltor_agency" @click.stop="goToAgency">
-          {{ apartment.rieltor.rieltor_agency }}
-        </div>
+        <button
+            class="share-btn-rieltor"
+            @click.stop="shareRieltor"
+            :disabled="isSharingRieltor || !apartment.rieltor?.rieltor_phone_number"
+            title="Поділитися контактом рієлтора"
+        >
+          <svg v-if="!isSharingRieltor" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 16.08C17.24 16.08 16.56 16.38 16.04 16.85L8.91 12.7C8.96 12.47 9 12.24 9 12C9 11.76 8.96 11.53 8.91 11.3L15.96 7.22C16.5 7.69 17.21 8 18 8C19.66 8 21 6.66 21 5C21 3.34 19.66 2 18 2C16.34 2 15 3.34 15 5C15 5.24 15.04 5.47 15.09 5.7L8.04 9.78C7.5 9.31 6.79 9 6 9C4.34 9 3 10.34 3 12C3 13.66 4.34 15 6 15C6.79 15 7.5 14.69 8.04 14.22L15.15 18.35C15.1 18.58 15.06 18.81 15.06 19.05C15.06 20.71 16.4 22.05 18.06 22.05C19.72 22.05 21.06 20.71 21.06 19.05C21.06 17.39 19.72 16.05 18.06 16.05H18V16.08Z" fill="currentColor"/></svg>
+          <span v-else>...</span>
+        </button>
       </div>
       <div class="actions-block">
-        <button class="call-btn" @click="callRieltor">Набрати</button>
+         <!-- Змінено @click на callRieltor -->
+        <button class="call-btn" @click="callRieltor" :disabled="isSendingContact || !apartment.rieltor?.rieltor_phone_number">
+          {{ isSendingContact ? 'Надсилаємо...' : 'Набрати' }}
+        </button>
         <button class="msg-btn" @click="goToDetails">Детальніше</button>
       </div>
+       <div v-if="actionStatusMessage" class="share-status-message" :class="actionStatusType">
+           {{ actionStatusMessage }}
+       </div>
     </div>
   </div>
   <div v-else class="loading">Завантаження...</div>
@@ -152,8 +171,8 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import axios from 'axios'
-import { fetchApartmentById } from '../api.js'
+// Додано sendRieltorContactToUser
+import { fetchApartmentById, prepareApartmentShare, prepareRieltorShare, sendRieltorContactToUser } from '../api.js'
 import { useFavouritesStore } from '../stores/favourites'
 import BackButton from '../components/BackButton.vue'
 import { useTelegram } from '../useTelegram'
@@ -169,14 +188,28 @@ const modalPhotoIndex = ref(0)
 const priceHistory = ref([])
 const { tg, user, isReady } = useTelegram()
 const isSharingApartment = ref(false)
-
-const API_BASE_URL = import.meta.env.VITE_SERVER_BASE || 'http://localhost:3000'
+const isSharingRieltor = ref(false) // Для кнопки "Поділитися"
+const isSendingContact = ref(false) // Новий стан для кнопки "Набрати"
+const actionStatusMessage = ref(''); // Спільне повідомлення про статус
+const actionStatusType = ref(''); // 'success', 'error', 'info'
 
 const galleryTouchStartX = ref(0)
 const galleryTouchEndX = ref(0)
 
 const modalTouchStartX = ref(0)
 const modalTouchEndX = ref(0)
+
+// Функція для показу повідомлень користувачу
+function showActionStatus(message, type = 'info', duration = 3000) {
+    actionStatusMessage.value = message;
+    actionStatusType.value = type;
+    if (duration > 0) { // Дозволити duration = 0 для постійного повідомлення
+        setTimeout(() => {
+            actionStatusMessage.value = '';
+            actionStatusType.value = '';
+        }, duration);
+    }
+}
 
 onMounted(async () => {
   const id = route.params.id
@@ -186,10 +219,19 @@ onMounted(async () => {
       const data = res.data
       apartment.value = data.apartment || data
       priceHistory.value = data.price_history || []
-      liked.value = store.favourites.includes(apartment.value._id)
+      if (apartment.value?._id) {
+        liked.value = store.favourites.includes(apartment.value._id)
+      } else {
+        console.warn("Apartment ID is missing, cannot check favourites status.");
+        liked.value = false;
+      }
+    } else {
+       console.error("API call to fetch apartment was not successful:", res);
+       showActionStatus('Помилка: Не вдалося отримати дані квартири', 'error');
     }
   } catch (e) {
-    // handle error
+    console.error("Failed to load apartment data:", e);
+    showActionStatus('Помилка завантаження даних квартири', 'error');
   }
 })
 
@@ -229,19 +271,19 @@ const commissionText = computed(() => {
 })
 
 function nextPhoto() {
-  if (!apartment.value) return
+  if (!apartment.value?.photo || apartment.value.photo.length === 0) return;
   if (galleryIndex.value < apartment.value.photo.length - 1) {
-    galleryIndex.value++
+    galleryIndex.value++;
   } else {
-    galleryIndex.value = 0
+    galleryIndex.value = 0;
   }
 }
 function prevPhoto() {
-  if (!apartment.value) return
+ if (!apartment.value?.photo || apartment.value.photo.length === 0) return;
   if (galleryIndex.value > 0) {
-    galleryIndex.value--
+    galleryIndex.value--;
   } else {
-    galleryIndex.value = apartment.value.photo.length - 1
+    galleryIndex.value = apartment.value.photo.length - 1;
   }
 }
 function openPhotoModal(idx) {
@@ -252,19 +294,19 @@ function closePhotoModal() {
   showPhotoModal.value = false
 }
 function nextModalPhoto() {
-  if (!apartment.value) return
+ if (!apartment.value?.photo || apartment.value.photo.length === 0) return;
   if (modalPhotoIndex.value < apartment.value.photo.length - 1) {
-    modalPhotoIndex.value++
+    modalPhotoIndex.value++;
   } else {
-    modalPhotoIndex.value = 0
+    modalPhotoIndex.value = 0;
   }
 }
 function prevModalPhoto() {
-  if (!apartment.value) return
+ if (!apartment.value?.photo || apartment.value.photo.length === 0) return;
   if (modalPhotoIndex.value > 0) {
-    modalPhotoIndex.value--
+    modalPhotoIndex.value--;
   } else {
-    modalPhotoIndex.value = apartment.value.photo.length - 1
+    modalPhotoIndex.value = apartment.value.photo.length - 1;
   }
 }
 function touchStartGallery(e) {
@@ -273,14 +315,18 @@ function touchStartGallery(e) {
 function touchMoveGallery(e) {
   galleryTouchEndX.value = e.changedTouches[0].screenX
 }
-function touchEndGallery(e) {
+function touchEndGallery() {
   if (apartment.value?.photo?.length <= 1) return
   const diff = galleryTouchStartX.value - galleryTouchEndX.value
-  if (diff > 50) {
-    nextPhoto()
-  } else if (diff < -50) {
-    prevPhoto()
+  if (galleryTouchStartX.value !== 0 && galleryTouchEndX.value !== 0) {
+      if (diff > 50) {
+        nextPhoto()
+      } else if (diff < -50) {
+        prevPhoto()
+      }
   }
+  galleryTouchStartX.value = 0;
+  galleryTouchEndX.value = 0;
 }
 function touchStartModal(e) {
   modalTouchStartX.value = e.changedTouches[0].screenX
@@ -288,18 +334,25 @@ function touchStartModal(e) {
 function touchMoveModal(e) {
   modalTouchEndX.value = e.changedTouches[0].screenX
 }
-function touchEndModal(e) {
+function touchEndModal() {
   if (apartment.value?.photo?.length <= 1) return
   const diff = modalTouchStartX.value - modalTouchEndX.value
-  if (diff > 50) {
-    nextModalPhoto()
-  } else if (diff < -50) {
-    prevModalPhoto()
+  if (modalTouchStartX.value !== 0 && modalTouchEndX.value !== 0) {
+      if (diff > 50) {
+        nextModalPhoto()
+      } else if (diff < -50) {
+        prevModalPhoto()
+      }
   }
+  modalTouchStartX.value = 0;
+  modalTouchEndX.value = 0;
 }
 
 function toggleLike() {
-  if (!apartment.value) return
+  if (!apartment.value?._id) {
+     console.warn("Cannot toggle like, apartment ID is missing.");
+     return;
+  }
   liked.value = !liked.value
   const id = apartment.value._id
   if (liked.value) {
@@ -310,10 +363,12 @@ function toggleLike() {
 }
 
 function formatDate(ts) {
+  if (!ts) return '';
   const d = new Date(ts)
   return d.toLocaleDateString('uk-UA')
 }
 function isYesterday(ts) {
+  if (!ts) return false;
   const d = new Date(ts)
   const now = new Date()
   const yesterday = new Date(now)
@@ -321,13 +376,15 @@ function isYesterday(ts) {
   return d.getDate() === yesterday.getDate() && d.getMonth() === yesterday.getMonth() && d.getFullYear() === yesterday.getFullYear()
 }
 function priceDiff(change, prev) {
+  if (!change?.price_number || !prev?.price_number) return 0;
   return change.price_number - prev.price_number
 }
 function priceDiffText(change, prev) {
   const diff = priceDiff(change, prev)
   if (diff === 0) return ''
   const sign = diff > 0 ? '+' : '-'
-  return `${sign} ${Math.abs(diff).toLocaleString()} ${currencySymbol.value} ${diff > 0 ? '▲' : '▼'}`
+  const cs = currencySymbol.value || '';
+  return `${sign} ${Math.abs(diff).toLocaleString()} ${cs} ${diff > 0 ? '▲' : '▼'}`
 }
 function priceDiffClass(change, prev) {
   const diff = priceDiff(change, prev)
@@ -335,95 +392,175 @@ function priceDiffClass(change, prev) {
   if (diff < 0) return 'ph-down'
   return ''
 }
-function callRieltor() {
-  const phone = apartment.value?.rieltor?.rieltor_phone_number
-  if (!phone) return
-  navigator.clipboard.writeText(phone).then(() => {
-    if (window.Telegram?.WebApp?.showAlert) {
-      window.Telegram.WebApp.showAlert('Номер скопійовано: ' + phone)
-    } else {
-      alert('Номер скопійовано: ' + phone)
-    }
-    if (tg && tg.openLink) {
-      tg.openLink('tel:' + phone)
-    } else {
-      console.warn('WebApp.openLink is not available. Falling back to window.location.href')
-      window.location.href = 'tel:' + phone
-    }
-  }).catch(err => {
-     console.error("Failed to copy or open tel link:", err);
-     if (window.Telegram?.WebApp?.showAlert) {
-       window.Telegram.WebApp.showAlert('Не вдалося скопіювати номер або відкрити екран набору')
-     }
-  })
-}
-function goToDetails() {
-  const link = apartment.value?.link
-  if (link) window.open(link, '_blank')
-}
-function goToLandmark(landmark) {
-  router.push({ name: 'results', query: { city: apartment.value.address.city, landmarks: JSON.stringify([landmark]) } })
-}
-function goToResidential(residential) {
-  router.push({ name: 'results', query: { city: apartment.value.address.city, residentialComplexes: JSON.stringify([residential]) } })
-}
-function goToRieltor() {
-  router.push({ name: 'rieltor', params: { name: apartment.value.rieltor.rieltor_name } })
-}
-function goToAgency() {
-  router.push({ name: 'agency', params: { name: apartment.value.rieltor.rieltor_agency } })
-}
 
-async function shareApartment() {
-  if (!tg || !isReady.value || !user.value?.id || !apartment.value?._id) {
-    console.error('Telegram WebApp is not ready, user ID or apartment ID is missing.');
-    alert('Помилка: Неможливо поділитися оголошенням зараз.');
+// --- Функція для кнопки "Поділитися" (використовує prepareRieltorShare + tg.shareMessage) ---
+async function shareRieltor() {
+  const rieltor = apartment.value?.rieltor;
+  if (!tg || !isReady.value || !user.value?.id || !rieltor?.rieltor_name || !rieltor?.rieltor_phone_number) {
+    console.error('Share Rieltor: Prereqs not met', { tg, isReady: isReady.value, user: user.value, rieltor });
+    showActionStatus('Помилка: Не вдалося підготувати контакт рієлтора для поширення.', 'error');
     return;
   }
-
-  if (isSharingApartment.value) return;
-  isSharingApartment.value = true;
+  if (isSharingRieltor.value) return; // Перевірка стану
+  isSharingRieltor.value = true;
+  showActionStatus('Готуємо контакт для поширення...', 'info', 0); // 0 = не зникає самостійно
 
   try {
-    const response = await axios.post(`/api/bot/prepare-apartment-share`, {
+    const payload = {
+      userId: user.value.id,
+      rieltorName: rieltor.rieltor_name,
+      rieltorPhoneNumber: rieltor.rieltor_phone_number,
+      rieltorPhotoUrl: rieltor.photo,
+      apartmentId: apartment.value._id
+    };
+    const response = await prepareRieltorShare(payload);
+
+    if (response.success && response.preparedMessageId) {
+      if (tg.shareMessage) {
+        showActionStatus('Відкриваємо вікно Telegram для поширення...', 'info', 0);
+        tg.shareMessage(response.preparedMessageId, (sent) => {
+          if (sent) {
+            showActionStatus('Контакт рієлтора поширено!', 'success');
+          } else {
+            showActionStatus('Поширення контакту скасовано.', 'info');
+          }
+          isSharingRieltor.value = false; // Скидаємо стан тут
+        });
+      } else {
+        showActionStatus('Функція "Поділитися" не доступна.', 'error');
+        isSharingRieltor.value = false; // Скидаємо стан
+      }
+    } else {
+      showActionStatus(`Помилка підготовки контакту: ${response?.message || 'Невідома помилка'}`, 'error');
+      isSharingRieltor.value = false; // Скидаємо стан
+    }
+  } catch (error) {
+    console.error('Error preparing/sharing rieltor contact:', error);
+    showActionStatus(`Помилка поширення: ${error.message}`, 'error');
+    isSharingRieltor.value = false; // Скидаємо стан
+  }
+}
+
+// --- Функція для кнопки "Набрати" (використовує sendRieltorContactToUser) ---
+async function callRieltor() {
+    const rieltor = apartment.value?.rieltor;
+    if (!isReady.value || !user.value?.id || !rieltor?.rieltor_name || !rieltor?.rieltor_phone_number) {
+        console.error('Call Rieltor (Send Contact): Prereqs not met', { isReady: isReady.value, user: user.value, rieltor });
+        showActionStatus('Помилка: Не вдалося надіслати контакт рієлтора.', 'error');
+        return;
+    }
+    if (isSendingContact.value) return; // Перевірка стану
+    isSendingContact.value = true;
+    showActionStatus('Надсилаємо контакт у чат...', 'info', 0);
+
+    try {
+        const payload = {
+          userId: user.value.id,
+          rieltorName: rieltor.rieltor_name,
+          rieltorPhoneNumber: rieltor.rieltor_phone_number,
+          rieltorPhotoUrl: rieltor.photo,
+          apartmentId: apartment.value._id
+        };
+        const response = await sendRieltorContactToUser(payload);
+
+        if (response.success) {
+            showActionStatus('Контакт рієлтора надіслано вам у чат!', 'success');
+            // Можна додати tg.close() якщо треба закривати додаток після надсилання
+            // if (tg) tg.close();
+        } else {
+            // Помилка оброблена в api.js, але можна додати специфічне повідомлення тут
+             showActionStatus(`Помилка надсилання контакту: ${response?.message || 'Невідома помилка'}`, 'error');
+        }
+    } catch (error) {
+        console.error('Error sending rieltor contact to user:', error);
+        showActionStatus(`Помилка надсилання: ${error.message}`, 'error');
+    } finally {
+        isSendingContact.value = false; // Завжди скидаємо стан
+    }
+}
+
+
+// --- Існуюча функція для поширення оголошення ---
+async function shareApartment() {
+  if (!tg || !isReady.value || !user.value?.id || !apartment.value?._id) {
+    console.error('Share Apartment: Prereqs not met.');
+    showActionStatus('Помилка: Неможливо поділитися оголошенням зараз.', 'error');
+    return;
+  }
+  if (isSharingApartment.value) return;
+  isSharingApartment.value = true;
+  showActionStatus('Готуємо оголошення для надсилання...', 'info', 0);
+
+  try {
+    const response = await prepareApartmentShare({
       userId: user.value.id,
       apartmentId: apartment.value._id
     });
 
-    if (response.data && response.data.success && response.data.preparedMessageId) {
-      const preparedMessageId = response.data.preparedMessageId;
-      console.log('Received prepared apartment messageId:', preparedMessageId);
-
+    if (response.success && response.preparedMessageId) {
       if (tg.shareMessage) {
-        tg.shareMessage(preparedMessageId, (sent) => {
+        showActionStatus('Відкриваємо вікно Telegram для надсилання...', 'info', 0);
+        tg.shareMessage(response.preparedMessageId, (sent) => {
           if (sent) {
-            console.log('Apartment shared successfully via bot.');
-            tg.showAlert('Оголошення успішно надіслано!');
+            showActionStatus('Оголошення успішно надіслано!', 'success');
           } else {
-            console.warn('User cancelled sharing apartment or it failed.');
-            tg.showAlert('Надсилання скасовано.');
+             showActionStatus('Надсилання оголошення скасовано.', 'info');
           }
+           isSharingApartment.value = false; // Скидання стану
         });
       } else {
-        console.error('tg.shareMessage is not available in this Telegram version.');
-        tg.showAlert('Функція поділитися повідомленням не доступна у вашій версії Telegram.');
+        showActionStatus('Функція "Поділитися" не доступна.', 'error');
+        isSharingApartment.value = false; // Скидання стану
       }
     } else {
-      console.error('Failed to prepare apartment message:', response.data);
-      tg.showAlert('Помилка підготовки оголошення для надсилання.');
+      showActionStatus(`Помилка підготовки оголошення: ${response?.message || 'Невідома помилка'}`, 'error');
+      isSharingApartment.value = false; // Скидання стану
     }
-
   } catch (error) {
     console.error('Error sharing apartment via bot:', error);
-    const errorMessage = error.response?.data?.message || error.message || 'Невідома помилка сервера.';
-    tg.showAlert(`Помилка: ${errorMessage}`);
-  } finally {
-    isSharingApartment.value = false;
+    showActionStatus(`Помилка: ${error.message}`, 'error');
+    isSharingApartment.value = false; // Скидання стану
   }
+}
+
+function goToDetails() {
+  const link = apartment.value?.link
+  if (link) {
+      if (tg?.openLink) {
+         tg.openLink(link);
+      } else {
+          window.open(link, '_blank');
+          console.warn('WebApp.openLink is not available. Falling back to window.open');
+      }
+  } else {
+      console.warn('No link found for apartment details.');
+       showActionStatus('Посилання на оригінальне оголошення відсутнє.', 'info');
+  }
+}
+function goToLandmark(landmark) {
+  if (apartment.value?.address?.city && landmark) {
+      router.push({ name: 'results', query: { city: apartment.value.address.city, landmarks: JSON.stringify([landmark]) } })
+  }
+}
+function goToResidential(residential) {
+ if (apartment.value?.address?.city && residential) {
+     router.push({ name: 'results', query: { city: apartment.value.address.city, residentialComplexes: JSON.stringify([residential]) } })
+ }
+}
+function goToRieltor() {
+    if (apartment.value?.rieltor?.rieltor_name) {
+       router.push({ name: 'rieltor', params: { name: apartment.value.rieltor.rieltor_name } })
+    }
+}
+function goToAgency() {
+    if (apartment.value?.rieltor?.rieltor_agency) {
+        router.push({ name: 'agency', params: { name: apartment.value.rieltor.rieltor_agency } })
+    }
 }
 </script>
 
 <style scoped>
+/* ... (стилі залишаються ті ж самі, що й у попередньому кроці) ... */
 .details-view {
   position: relative;
   max-width: 500px;
@@ -432,7 +569,8 @@ async function shareApartment() {
   border-radius: 16px;
   box-shadow: 0 2px 16px rgba(0,0,0,0.08);
   padding: 0 0 10px 0;
-  margin-bottom: 170px;
+  /* Відступ знизу для фіксованого блоку */
+  margin-bottom: 170px; /* Підібрати значення */
 }
 .gallery {
   width: 100%;
@@ -566,6 +704,7 @@ async function shareApartment() {
   color: var(--color-text);
   margin-bottom: 10px;
   align-items: center;
+  flex-wrap: wrap; /* Дозволити перенос */
 }
 .characteristics-block .dot {
   font-size: 10px;
@@ -578,6 +717,7 @@ async function shareApartment() {
   gap: 12px;
   margin-bottom: 12px;
   margin-top: 2px;
+  flex-wrap: wrap; /* Дозволити перенос */
 }
 .permit-card {
   background: var(--color-background-soft);
@@ -613,7 +753,7 @@ async function shareApartment() {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 50px;
+  bottom: 56px; /* Піднято трохи вище */
   background: var(--color-bottom-bar-bg);
   z-index: 100;
   box-shadow: 0 -2px 12px color-mix(in srgb, var(--color-border) 20%, transparent);
@@ -622,44 +762,73 @@ async function shareApartment() {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-width: 500px;
-  margin: 0 auto;
+  max-width: 500px; /* Обмеження ширини */
+  margin: 0 auto; /* Центрування */
 }
 .rieltor-block-content {
   display: flex;
-  align-items: center;
+  align-items: center; /* Вирівнювання по центру вертикалі */
   justify-content: space-between;
   gap: 12px;
 }
-.rieltor-info {
+.rieltor-info-container {
   display: flex;
-  align-items: center;
+  align-items: center; /* Вирівняти фото та текст по центру */
   gap: 10px;
-  cursor: pointer;
+  flex-grow: 1; /* Дозволити контейнеру рости */
+  min-width: 0; /* Для правильного переносу тексту всередині */
 }
 .rieltor-photo {
   width: 44px;
   height: 44px;
   border-radius: 50%;
   object-fit: cover;
+  flex-shrink: 0; /* Не стискати фото */
+  cursor: pointer;
+}
+.rieltor-text-details {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-width: 0; /* Дозволити внутрішньому контенту стискатись */
 }
 .rieltor-name {
   font-weight: 600;
   font-size: 15px;
   color: var(--color-text);
-  line-height: 1.1;
+  line-height: 1.2;
+  cursor: pointer;
+  white-space: nowrap; /* Запобігти переносу імені */
+  overflow: hidden;
+  text-overflow: ellipsis; /* Додати три крапки, якщо не влазить */
+}
+.rieltor-subline { /* Новий блок для позиції та агенції */
+  display: flex;
+  justify-content: space-between; /* Рознести елементи */
+  align-items: baseline; /* Вирівняти по базовій лінії */
+  gap: 8px; /* Проміжок між ними */
+  width: 100%;
 }
 .rieltor-position {
   font-size: 13px;
   color: var(--color-text-secondary);
+  white-space: nowrap; /* Запобігти переносу */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 1; /* Дозволити стискатись при потребі */
 }
 .rieltor-agency {
-  font-size: 15px;
+  font-size: 13px; /* Зробимо однаковий розмір з позицією */
   color: var(--color-link);
-  font-weight: 600;
+  font-weight: 500; /* Трохи менш жирний */
   cursor: pointer;
-  margin-left: 12px;
+  text-align: right; /* Вирівняти текст агенції по правому краю */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0; /* Не стискати агенцію (або 1 якщо треба) */
 }
+
 .clickable {
   cursor: pointer;
   text-decoration: underline;
@@ -667,7 +836,7 @@ async function shareApartment() {
 .actions-block {
   display: flex;
   gap: 12px;
-  margin-bottom: 18px;
+  margin-bottom: 4px;
 }
 .call-btn, .msg-btn {
   flex: 1;
@@ -677,10 +846,16 @@ async function shareApartment() {
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
+  min-width: 100px; /* Мінімальна ширина кнопок */
 }
 .call-btn {
   background: var(--color-button);
   color: var(--color-button-text);
+}
+.call-btn:disabled {
+    background: var(--color-button-disabled-bg);
+    color: var(--color-button-disabled-text);
+    cursor: not-allowed;
 }
 .msg-btn {
   background: var(--color-background-soft);
@@ -877,25 +1052,63 @@ async function shareApartment() {
   transition: background-color 0.2s;
   padding: 0;
 }
-
 .share-btn-gallery:hover {
   background-color: color-mix(in srgb, var(--color-background) 80%, transparent);
 }
-
 .share-btn-gallery svg path {
   fill: var(--color-text);
 }
-
 .share-btn-gallery:disabled {
     background-color: color-mix(in srgb, var(--color-text-secondary) 30%, transparent);
     cursor: not-allowed;
 }
-
 .share-btn-gallery:disabled svg path {
     fill: var(--color-text-secondary);
 }
-
 .share-btn-gallery:disabled span {
     color: var(--color-text-secondary);
 }
-</style> 
+
+/* Кнопка Поділитися контактом рієлтора */
+.share-btn-rieltor {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  color: var(--color-link);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0; /* Не стискати кнопку */
+}
+.share-btn-rieltor:disabled {
+  color: var(--color-hint-color);
+  cursor: not-allowed;
+}
+.share-btn-rieltor svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* Повідомлення про статус дії */
+.share-status-message { /* Перейменовано для загальності */
+    font-size: 14px;
+    text-align: center;
+    padding: 6px 10px;
+    margin: 4px 0 4px 0;
+    border-radius: 6px;
+    font-weight: 500;
+}
+.share-status-message.info {
+    color: var(--color-text-secondary);
+    background-color: var(--color-background-soft);
+}
+.share-status-message.success {
+    color: #27ae60;
+    background-color: color-mix(in srgb, #27ae60 15%, transparent);
+}
+.share-status-message.error {
+    color: var(--color-destructive);
+    background-color: color-mix(in srgb, var(--color-destructive) 15%, transparent);
+}
+</style>

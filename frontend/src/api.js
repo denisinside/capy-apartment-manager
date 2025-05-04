@@ -1,6 +1,7 @@
 const API_BASE = '/api/apartments';
 import { useFavouritesStore } from './stores/favourites';
 import { useSubscriptionsStore } from './stores/subscriptions';
+import axios from 'axios'; // Додано axios для зручності
 
 const defaultHeaders = {
   'Accept': 'application/json',
@@ -19,12 +20,15 @@ window.fetch = (resource, init = {}) => {
   if (initDataString) {
     headers['X-Telegram-Init-Data'] = initDataString;
   }
-  console.log('[API] Fetch Override ->', method, resource, 'initDataPresent:', !!initDataString, 'initData:', initDataString, 'headers:', headers);
+  // console.log('[API] Fetch Override ->', method, resource, 'initDataPresent:', !!initDataString, 'headers:', headers);
   return originalFetch(resource, { ...init, headers })
     .then(res => {
       const validatorStatus = res.headers.get('X-Telegram-Validator');
       const validatorError = res.headers.get('X-Telegram-Validator-Error');
-      console.log('[API] Fetch Response ->', resource, 'status:', res.status, 'Validator:', validatorStatus, 'Error:', validatorError);
+      if (validatorStatus !== 'ok') {
+          console.warn('[API] Telegram validation status:', validatorStatus, 'Error:', validatorError);
+      }
+      // console.log('[API] Fetch Response ->', resource, 'status:', res.status, 'Validator:', validatorStatus);
       return res;
     });
 };
@@ -112,7 +116,7 @@ export async function addToFavourites(userId, apartmentId) {
 }
 
 export async function removeFromFavourites(userId, apartmentId) {
-  const res = await fetch(`/api/favourites/${userId}/${apartmentId}/`, { 
+  const res = await fetch(`/api/favourites/${userId}/${apartmentId}/`, {
     method: 'DELETE',
     headers: defaultHeaders
   });
@@ -152,7 +156,7 @@ export async function updateSubscription(subscriptionId, userId, subscriptionOpt
 }
 
 export async function deleteSubscription(subscriptionId) {
-  const res = await fetch(`/api/subscriptions/${subscriptionId}/`, { 
+  const res = await fetch(`/api/subscriptions/${subscriptionId}/`, {
     method: 'DELETE',
     headers: defaultHeaders
   });
@@ -187,9 +191,9 @@ export async function getApartmentsForReview(userId) {
 
 // Видалити квартиру зі списку сповіщень
 export async function removeNotifiedApartment(userId, apartmentId) {
-  const res = await fetch(`/api/subscriptions/review/${userId}/${apartmentId}/`, { 
+  const res = await fetch(`/api/subscriptions/review/${userId}/${apartmentId}/`, {
     method: 'DELETE',
-    headers: defaultHeaders 
+    headers: defaultHeaders
   });
   if (!res.ok) throw new Error('Failed to remove notified apartment');
   return res.json();
@@ -207,4 +211,71 @@ export async function fetchFavouriteApartments(userId) {
   const res = await fetch(`/api/favourites/${userId}/apartments`, { headers: defaultHeaders });
   if (!res.ok) throw new Error('Failed to fetch favourite apartments');
   return res.json();
+}
+
+// --- API для взаємодії з ботом ---
+
+/**
+ * Підготувати повідомлення для поширення контакту рієлтора (для кнопки "Поділитися").
+ * @param {object} data - Дані для підготовки повідомлення.
+ * @param {number} data.userId - ID користувача Telegram.
+ * @param {string} data.rieltorName - Ім'я рієлтора.
+ * @param {string} data.rieltorPhoneNumber - Номер телефону рієлтора.
+ * @param {string} [data.rieltorPhotoUrl] - URL фото рієлтора (необов'язково).
+ * @param {string} [data.apartmentId] - ID квартири (необов'язково, для кнопки "Переглянути це оголошення").
+ * @returns {Promise<object>} Результат запиту, що містить preparedMessageId.
+ */
+export async function prepareRieltorShare(data) {
+    console.log('[API] Preparing rieltor share with data:', data);
+    const response = await axios.post(`/api/bot/prepare-rieltor-share`, data);
+    if (!response.data || !response.data.success) {
+        throw new Error(response.data?.message || 'Failed to prepare rieltor share message');
+    }
+    console.log('[API] Prepared rieltor share response:', response.data);
+    return response.data;
+}
+
+/**
+ * Надіслати контакт рієлтора напряму користувачу в чат (для кнопки "Набрати").
+ * @param {object} data - Дані для надсилання контакту.
+ * @param {number} data.userId - ID користувача Telegram.
+ * @param {string} data.rieltorName - Ім'я рієлтора.
+ * @param {string} data.rieltorPhoneNumber - Номер телефону рієлтора.
+ * @param {string} [data.rieltorPhotoUrl] - URL фото рієлтора (необов'язково).
+ * @param {string} [data.apartmentId] - ID квартири (необов'язково, для кнопки "Переглянути це оголошення").
+ * @returns {Promise<object>} Результат запиту.
+ */
+export async function sendRieltorContactToUser(data) {
+    console.log('[API] Sending rieltor contact directly to user:', data);
+    // Використовуємо fetch, оскільки axios може мати проблеми з обробкою помилок 4xx/5xx без try-catch
+    const res = await fetch(`/api/bot/send-rieltor-contact-to-user`, {
+        method: 'POST',
+        headers: defaultHeaders, // Надсилаємо заголовки за замовчуванням
+        body: JSON.stringify(data)
+    });
+    const responseData = await res.json(); // Завжди намагаємося розпарсити JSON
+    if (!res.ok) {
+        // Викидаємо помилку з повідомленням від сервера, якщо воно є
+        throw new Error(responseData?.message || `Failed to send rieltor contact. Status: ${res.status}`);
+    }
+    console.log('[API] Send rieltor contact response:', responseData);
+    return responseData;
+}
+
+
+/**
+ * Підготувати повідомлення для поширення оголошення.
+ * @param {object} data - Дані для підготовки повідомлення.
+ * @param {number} data.userId - ID користувача Telegram.
+ * @param {string} data.apartmentId - ID квартири.
+ * @returns {Promise<object>} Результат запиту, що містить preparedMessageId.
+ */
+export async function prepareApartmentShare(data) {
+    console.log('[API] Preparing apartment share with data:', data);
+    const response = await axios.post(`/api/bot/prepare-apartment-share`, data);
+    if (!response.data || !response.data.success) {
+        throw new Error(response.data?.message || 'Failed to prepare apartment share message');
+    }
+    console.log('[API] Prepared apartment share response:', response.data);
+    return response.data;
 }

@@ -102,7 +102,7 @@ router.post('/prepare-contract-share', async (req, res, next) => {
         if (error.response && error.description) {
             console.error('Telegram API Error:', error.description);
             return res.status(500).json({ success: false, message: `Telegram API error: ${error.description}` });
-        } 
+        }
         next(error);
     }
 });
@@ -184,7 +184,7 @@ router.post('/prepare-apartment-share', async (req, res, next) => {
             photo_url: imageUrlForSharing,
             thumb_url: imageUrlForSharing,
             caption: caption,
-            parse_mode: 'Markdown', 
+            parse_mode: 'Markdown',
             reply_markup: {
                  inline_keyboard: [
                      [
@@ -228,4 +228,140 @@ router.post('/prepare-apartment-share', async (req, res, next) => {
     }
 });
 
-export default router; 
+// POST /api/bot/prepare-rieltor-share - Для кнопки "Поділитися"
+router.post('/prepare-rieltor-share', async (req, res, next) => {
+    const { userId, rieltorName, rieltorPhoneNumber, rieltorPhotoUrl, apartmentId } = req.body;
+    const BOT_STARTAPP_URL = process.env.BOT_STARTAPP_URL;
+
+    if (!userId || !rieltorName || !rieltorPhoneNumber) {
+        return res.status(400).json({ success: false, message: 'User ID, Rieltor Name, and Phone Number are required' });
+    }
+    if (!BOT_STARTAPP_URL) {
+        console.error('BOT_STARTAPP_URL environment variable is not set!');
+        return res.status(500).json({ success: false, message: 'Server configuration error' });
+    }
+
+    // Basic name splitting (can be improved)
+    const nameParts = rieltorName.trim().split(' ');
+    const firstName = nameParts[0];
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : undefined;
+
+    try {
+        const keyboard = [];
+        const apartmentButtonUrl = apartmentId ? `${BOT_STARTAPP_URL}${apartmentId}` : null;
+        const rieltorPageUrl = `${BOT_STARTAPP_URL}rieltor/${encodeURIComponent(rieltorName)}`;
+
+        if (apartmentButtonUrl) {
+            keyboard.push([{ text: "🏠 Переглянути це оголошення", url: apartmentButtonUrl }]);
+        }
+        keyboard.push([{ text: "👤 Всі оголошення рієлтора", url: rieltorPageUrl }]);
+
+        const inlineQueryResult = {
+            type: 'contact',
+            id: `rieltor_share_${userId}_${Date.now()}`,
+            phone_number: rieltorPhoneNumber,
+            first_name: firstName,
+            ...(lastName && { last_name: lastName }), // Add last_name only if it exists
+            ...(rieltorPhotoUrl && { thumb_url: rieltorPhotoUrl }), // Use photo as thumbnail
+            reply_markup: {
+                inline_keyboard: keyboard
+            }
+        };
+
+        console.log(`Preparing rieltor contact share message for user: ${userId}, Rieltor: ${rieltorName}, Phone: ${rieltorPhoneNumber}`);
+
+        const response = await bot.telegram.callApi('savePreparedInlineMessage', {
+            user_id: parseInt(userId, 10),
+            result: JSON.stringify(inlineQueryResult),
+            allow_user_chats: true,
+            allow_bot_chats: true,
+            allow_group_chats: true,
+            allow_channel_chats: true, // Allow sharing to channels too
+        });
+
+        console.log('savePreparedInlineMessage (rieltor) response:', response);
+
+        if (response && response.id) {
+            res.json({ success: true, preparedMessageId: response.id });
+        } else {
+            throw new Error('Failed to get prepared message ID from Telegram API for rieltor contact');
+        }
+
+    } catch (error) {
+        console.error(`Error in /prepare-rieltor-share for rieltor ${rieltorName}:`, error);
+        if (error.response && error.description) {
+            console.error('Telegram API Error:', error.description);
+            return res.status(500).json({ success: false, message: `Telegram API error: ${error.description}` });
+        }
+        next(error);
+    }
+});
+
+// POST /api/bot/send-rieltor-contact-to-user - Для кнопки "Набрати"
+router.post('/send-rieltor-contact-to-user', async (req, res, next) => {
+    const { userId, rieltorName, rieltorPhoneNumber, rieltorPhotoUrl, apartmentId } = req.body;
+    const BOT_STARTAPP_URL = process.env.BOT_STARTAPP_URL;
+
+    if (!userId || !rieltorName || !rieltorPhoneNumber) {
+        return res.status(400).json({ success: false, message: 'User ID, Rieltor Name, and Phone Number are required' });
+    }
+    if (!BOT_STARTAPP_URL) {
+        console.error('BOT_STARTAPP_URL environment variable is not set!');
+        return res.status(500).json({ success: false, message: 'Server configuration error' });
+    }
+    if (!bot) {
+        console.error('Bot instance is not available!');
+        return res.status(500).json({ success: false, message: 'Bot service unavailable' });
+    }
+
+    const nameParts = rieltorName.trim().split(' ');
+    const firstName = nameParts[0];
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : undefined;
+
+    try {
+        const keyboard = [];
+        const apartmentButtonUrl = apartmentId ? `${BOT_STARTAPP_URL}${apartmentId}` : null;
+        const rieltorPageUrl = `${BOT_STARTAPP_URL}rieltor/${encodeURIComponent(rieltorName)}`;
+
+        if (apartmentButtonUrl) {
+            keyboard.push([{ text: "🏠 Переглянути це оголошення", url: apartmentButtonUrl }]);
+        }
+        keyboard.push([{ text: "👤 Всі оголошення рієлтора", url: rieltorPageUrl }]);
+
+        const replyMarkup = { inline_keyboard: keyboard };
+
+        console.log(`Sending rieltor contact directly to user: ${userId}, Rieltor: ${rieltorName}, Phone: ${rieltorPhoneNumber}`);
+
+        await bot.telegram.sendContact(
+            parseInt(userId, 10),
+            rieltorPhoneNumber,
+            firstName,
+            {
+                last_name: lastName,
+                reply_markup: replyMarkup,
+                // vcard: можна додати vcard якщо потрібно
+            }
+        );
+
+        console.log(`Successfully sent contact to user ${userId}`);
+        res.json({ success: true, message: 'Contact sent successfully' });
+
+    } catch (error) {
+        console.error(`Error in /send-rieltor-contact-to-user for user ${userId}, rieltor ${rieltorName}:`, error);
+        if (error.response && error.description) {
+            console.error('Telegram API Error:', error.description);
+            // Спробуємо надати більш конкретну помилку клієнту
+             if (error.description.includes('bot was blocked by the user')) {
+                 return res.status(403).json({ success: false, message: `Помилка Telegram: Бот заблокований користувачем.` });
+             } else if (error.description.includes('chat not found')) {
+                  return res.status(404).json({ success: false, message: `Помилка Telegram: Чат з користувачем не знайдено.` });
+             }
+            return res.status(500).json({ success: false, message: `Помилка Telegram: ${error.description}` });
+        }
+        // Загальна помилка сервера
+        return res.status(500).json({ success: false, message: 'Internal server error while sending contact' });
+    }
+});
+
+
+export default router;
