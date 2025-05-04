@@ -36,11 +36,14 @@ router.isReady().then(() => {
           clearStartParam();
         })
         .catch(err => {
-          console.error('Navigation Error from startParam:', err);
-          router.push({ name: '/' }); 
+          try {
+            router.push({ name: 'rieltor', params: { name: decodeURIComponent(apartmentId) } });
+          } catch (e) {
+            console.error('Navigation Error from startParam:', err);
+            router.push({ name: '/' }); 
+          }
           clearStartParam();
         });
-
     } else if (sessionStorage.getItem(sessionStorageKey)) {
       console.log(`StartParam "${apartmentId}" already processed in this session.`);
       clearStartParam();

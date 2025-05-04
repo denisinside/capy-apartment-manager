@@ -77,9 +77,6 @@ router.post('/prepare-contract-share', async (req, res, next) => {
             description: 'Поділитися PDF шаблоном договору оренди',
         };
 
-        console.log(`Preparing contract document share message for user: ${userId}`);
-        console.log(`Document URL: ${pdfPublicUrl}`);
-
         const response = await bot.telegram.callApi('savePreparedInlineMessage', {
             user_id: parseInt(userId, 10),
             result: JSON.stringify(inlineQueryResult),
@@ -322,7 +319,7 @@ router.post('/send-rieltor-contact-to-user', async (req, res, next) => {
         const keyboard = [];
         const apartmentButtonUrl = apartmentId ? `${BOT_STARTAPP_URL}${apartmentId}` : null;
         const rieltorPageUrl = `${BOT_STARTAPP_URL}rieltor/${encodeURIComponent(rieltorName)}`;
-
+        console.log(`rieltorPageUrl: ${rieltorPageUrl}`);
         if (apartmentButtonUrl) {
             keyboard.push([{ text: "🏠 Переглянути це оголошення", url: apartmentButtonUrl }]);
         }
@@ -339,7 +336,6 @@ router.post('/send-rieltor-contact-to-user', async (req, res, next) => {
             {
                 last_name: lastName,
                 reply_markup: replyMarkup,
-                // vcard: можна додати vcard якщо потрібно
             }
         );
 
@@ -350,7 +346,6 @@ router.post('/send-rieltor-contact-to-user', async (req, res, next) => {
         console.error(`Error in /send-rieltor-contact-to-user for user ${userId}, rieltor ${rieltorName}:`, error);
         if (error.response && error.description) {
             console.error('Telegram API Error:', error.description);
-            // Спробуємо надати більш конкретну помилку клієнту
              if (error.description.includes('bot was blocked by the user')) {
                  return res.status(403).json({ success: false, message: `Помилка Telegram: Бот заблокований користувачем.` });
              } else if (error.description.includes('chat not found')) {

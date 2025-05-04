@@ -1,4 +1,5 @@
 import { Apartment, Rieltor, Agency, District, SubwayStation, ResidentialComplex, Landmark } from '../models/apartment.js';
+import currencyService from './currencyService.js';
 
 class ApartmentService {
     async getApartments({
@@ -16,12 +17,23 @@ class ApartmentService {
                 'is_active': true
             };
 
-            // Price filter
-            if (subscriptionOptions.price.min || subscriptionOptions.price.max) {
-                query['apartment.price.price_number'] = {};
-                if (subscriptionOptions.price.min) query['apartment.price.price_number'].$gte = subscriptionOptions.price.min;
-                if (subscriptionOptions.price.max) query['apartment.price.price_number'].$lte = subscriptionOptions.price.max;
-                query['apartment.price.currency'] = subscriptionOptions.price.currency;
+            // Price filter with dynamic currency conversion
+            if (subscriptionOptions.price.min !== undefined || subscriptionOptions.price.max !== undefined) {
+                const { min, max, currency: filterCurrency } = subscriptionOptions.price;
+                const rates = currencyService.getRates();
+                const orConditions = [];
+                Object.keys(rates).forEach(fromCurrency => {
+                    const rate = rates[filterCurrency] / rates[fromCurrency];
+                    if (!rate) return;
+                    const priceCond = {};
+                    if (min !== undefined) priceCond.$gte = min / rate;
+                    if (max !== undefined) priceCond.$lte = max / rate;
+                    orConditions.push({
+                        'apartment.price.currency': fromCurrency,
+                        'apartment.price.price_number': priceCond
+                    });
+                });
+                query.$or = orConditions;
             }
 
             // Area filter

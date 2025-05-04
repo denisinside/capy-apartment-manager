@@ -9,6 +9,7 @@ import { connectDB } from './database/db.js';
 import apartmentRoutes from './routes/apartmentRoutes.js';
 import subscriptionRoutes from './routes/subscriptionRoutes.js';
 import favouritesRoutes from './routes/favouritesRoutes.js';
+import currencyRoutes from './routes/currencyRoutes.js';
 import botInteractionRoutes from './routes/botInteractionRoutes.js';
 import { startBot } from './bot/bot.js';
 import { SubscriptionQueue } from './jobs/subscriptionQueue.js';
@@ -34,6 +35,8 @@ app.use(express.json());
 app.use('/api/apartments', telegramValidatorMiddleware, apartmentRoutes);
 app.use('/api/subscriptions', telegramValidatorMiddleware, subscriptionRoutes);
 app.use('/api/favourites', telegramValidatorMiddleware, favouritesRoutes);
+// Currency rate endpoints
+app.use('/api/currency', currencyRoutes);
 // Bot interaction routes should not require Telegram WebApp initData
 app.use('/api/bot', botInteractionRoutes);
 

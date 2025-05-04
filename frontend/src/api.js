@@ -279,3 +279,10 @@ export async function prepareApartmentShare(data) {
     console.log('[API] Prepared apartment share response:', response.data);
     return response.data;
 }
+
+// Fetch latest currency rates mapping (relative to UAH)
+export async function fetchRates() {
+  const res = await fetch('/api/currency/rates', { headers: defaultHeaders });
+  if (!res.ok) throw new Error('Failed to fetch currency rates');
+  return res.json();
+}

@@ -26,12 +26,6 @@
         <router-link to="/contracts" class="profile-menu-btn">
           <span class="profile-menu-icon">📄</span> Шаблони договорів
         </router-link>
-        <router-link to="/privacy" class="profile-menu-btn">
-          <span class="profile-menu-icon">ℹ️</span> Політика конфіденційності
-        </router-link>
-        <router-link to="/contact" class="profile-menu-btn">
-          <span class="profile-menu-icon">💬</span> Напишіть нам!
-        </router-link>
         <button class="profile-menu-btn logout" @click="logout">
           <span class="profile-menu-icon">🚪</span> Вийти
         </button>
@@ -45,7 +39,7 @@ import { useTelegram } from '../useTelegram'
 import { useRouter } from 'vue-router'
 import { computed } from 'vue'
 
-const { user, homeScreenStatus, addToHomeScreen: tgAddToHomeScreen } = useTelegram()
+const { tg, user, homeScreenStatus, addToHomeScreen: tgAddToHomeScreen } = useTelegram()
 const router = useRouter()
 
 const showAddToHomeScreen = computed(() => {
@@ -53,8 +47,7 @@ const showAddToHomeScreen = computed(() => {
 })
 
 function logout() {
-  // TODO: додати реальний логаут
-  router.push('/')
+  tg.close()
 }
 
 function triggerAddToHomeScreen() {

@@ -5,7 +5,7 @@ import { UserSubscription } from '../models/userSubscription.js';
 import { Apartment } from '../models/apartment.js';
 import { bot } from "../server.js";
 import { sendApartmentsWithoutContext } from '../bot/messages.js';
-import { buildQuery } from "../utils/optionsQueryBuilder.js";
+import apartmentService from '../services/apartmentService.js';
 import favouritesService from '../services/favouritesService.js';
 
 class SubscriptionQueue {
@@ -69,9 +69,9 @@ class SubscriptionQueue {
       for (const sub of subs) {
         const { userId, subscriptionOptions, lastNotifiedAt } = sub;
 
-        const query = buildQuery(subscriptionOptions);
-        query['created_at'] = { $gt: lastNotifiedAt || new Date(0) };
-        const newAds = await Apartment.find(query).lean();
+        const allAds = await apartmentService.getApartments({ subscriptionOptions });
+        const cutoff = lastNotifiedAt || new Date(0);
+        const newAds = allAds.filter(ad => ad.created_at > cutoff);
         
         if (newAds.length === 0) continue;
 

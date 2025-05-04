@@ -3,6 +3,7 @@ dotenv.config();
 
 import { Input } from "telegraf";
 import { combineApartmentImages } from '../utils/apartmentImageCombiner.js';
+import currencyService from '../services/currencyService.js';
 
 const WEB_APP_URL = process.env.WEB_APP_URL;
 const BOT_STARTAPP_URL = process.env.BOT_STARTAPP_URL;
@@ -26,6 +27,7 @@ export function startMessage(ctx, chat_id) {
 
 function formatApartmentDetails(apartment) {
     try {
+        const aptDetails = apartment.apartment;
         let description = apartment.apartment.description.advert_description || '';
         description = description.replace(/<[^>]*>?/g, '');
         description = description.replace(/&nbsp;/g, ' ');
@@ -36,22 +38,67 @@ function formatApartmentDetails(apartment) {
         description = description.replace(/&gt;/g, '>');
         description = description.replace(/<br\/>/g, '\n');
         description = description.replace(/<br>/g, '\n');
-        if (description.length > 800) {
-            description = description.substring(0, 800) + '...';
+        if (description.length > 500) {
+            description = description.substring(0, 500) + '...';
+        }
+
+        const currencyMap = {
+            Uah: 'грн',
+            Usd: '$',
+            Eur: '€'
+        };
+        const priceNumber = aptDetails.price.price_number;
+        const priceCurrency = aptDetails.price.currency;
+        const priceSymbol = currencyMap[priceCurrency] || priceCurrency;
+
+        let priceString = `💰 <b>${priceNumber} ${priceSymbol}/міс</b>`;
+
+        if (priceCurrency !== 'Uah') {
+            const rates = currencyService.getRates();
+            const rateToUah = rates[priceCurrency];
+            if (rateToUah && rateToUah > 0) {
+                const priceInUah = priceNumber / rateToUah;
+                const roundedPriceUah = Math.round(priceInUah / 100) * 100;
+                priceString += ` (≈ ${roundedPriceUah} грн)`;
+            } else {
+                 console.warn(`Could not get UAH rate for ${priceCurrency}`)
+            }
         }
 
         const details = [
-            `📍 <b>${apartment.apartment.address.street}, ${apartment.apartment.address.district}${apartment.apartment.address.house_number ? ', ' + apartment.apartment.address.house_number : ''}</b>`,
-            `💰 <b>${apartment.apartment.price.price_number} ${apartment.apartment.price.currency}</b>`,
+            `📍 <b>${apartment.apartment.address.street}, ${apartment.apartment.address.district}${apartment.apartment.address.house_number ? ', ' + apartment.apartment.address.house_number : ''}, ${apartment.apartment.address.city}</b>`,
+            priceString,
             ``,
-            `🛏️ ${apartment.apartment.characteristics.room_count}к.`,
-            `🪜 ${apartment.apartment.characteristics.floor} / ${apartment.apartment.characteristics.max_floor} поверх`,
-            `📐 ${apartment.apartment.characteristics.area.total} м² (заг.) / ${apartment.apartment.characteristics.area.living} м² (житл.) / ${apartment.apartment.characteristics.area.kitchen} м² (кухня)`,
-            `🏗️ ${apartment.apartment.characteristics.house_type}`,
-            `🛠️ ${apartment.apartment.characteristics.state}`,
-            ``,
-            `${description}`
         ];
+
+        if (aptDetails.permits.commission?.commission_price?.price_number > 0 || aptDetails.permits.commission?.commission_price?.commission_rate > 0) {
+            if (aptDetails.permits.commission.commission_price.price_number > 0) {
+                const commissionSymbol = currencyMap[aptDetails.permits.commission.commission_price.currency] || aptDetails.permits.commission.commission_price.currency;
+                details.push(`💸 Комісія: ${aptDetails.permits.commission.commission_price.price_number} ${commissionSymbol}`);
+            } else {
+                details.push(`💸 Комісія: ${aptDetails.permits.commission.commission_rate}%`);
+            }
+       } else {
+           details.push(`✅ Без комісії!`);
+       }
+       details.push(aptDetails.permits.allow_pets ? `🐾 Можна з тваринами` : `🐾🚫 Без тварин`);
+       details.push(aptDetails.permits.allow_children ? `👶 Можна з дітьми` : `👶🚫 Без дітей`);
+       details.push(``);
+
+        details.push(`🛏️ ${apartment.apartment.characteristics.room_count}к.`);
+        details.push(`🪜 ${apartment.apartment.characteristics.floor} / ${apartment.apartment.characteristics.max_floor} поверх`);
+        details.push(`📐 ${apartment.apartment.characteristics.area.total} м² (заг.) / ${apartment.apartment.characteristics.area.living} м² (житл.) / ${apartment.apartment.characteristics.area.kitchen} м² (кухня)`);
+
+        if (aptDetails.characteristics.house_type) {
+            details.push(`🏗️ ${aptDetails.characteristics.house_type}`);
+        }
+        if (aptDetails.characteristics.state) {
+            details.push(`🛠️ ${aptDetails.characteristics.state}`);
+        }
+
+        details.push(``);
+        details.push(`${description}`);
+
         return details.join("\n").trim();
     } catch (error) {
         console.error(`Error formatting apartment details for ${apartment._id}:`, error);
@@ -66,11 +113,25 @@ async function sendSingleApartment(bot, chat_id, apartment, replyMarkup) {
     const caption = formatApartmentDetails(apartment);
     const photos = apartment.apartment.photo;
 
+    let modifiedReplyMarkup = replyMarkup;
+    if (apartment.apartment?.rieltor?.rieltor_phone_number) {
+        const getContactButton = { text: "👤 Контакт рієлтора", callback_data: `get_rieltor_contact_${apartment._id}` };
+        if (modifiedReplyMarkup && modifiedReplyMarkup.inline_keyboard) {
+            if (modifiedReplyMarkup.inline_keyboard.length > 0 && modifiedReplyMarkup.inline_keyboard[0].length < 2) {
+                modifiedReplyMarkup.inline_keyboard[0].push(getContactButton);
+            } else {
+                modifiedReplyMarkup.inline_keyboard.push([getContactButton]);
+            }
+        } else {
+            modifiedReplyMarkup = { inline_keyboard: [[getContactButton]] };
+        }
+    }
+
     if (!photos || photos.length === 0) {
         console.warn(`No photos for apartment ${apartment._id}, sending text message.`);
         await bot.telegram.sendMessage(chat_id, caption, {
             parse_mode: 'HTML',
-            reply_markup: replyMarkup,
+            reply_markup: modifiedReplyMarkup,
             disable_web_page_preview: true
         });
         return;
@@ -81,7 +142,7 @@ async function sendSingleApartment(bot, chat_id, apartment, replyMarkup) {
         await bot.telegram.sendPhoto(chat_id, Input.fromBuffer(combinedImage), {
             caption: caption,
             parse_mode: 'HTML',
-            reply_markup: replyMarkup,
+            reply_markup: modifiedReplyMarkup,
         });
     } catch (combineError) {
         console.error(`Error combining images for apartment ${apartment._id}, falling back to single photo:`, combineError);
@@ -89,13 +150,13 @@ async function sendSingleApartment(bot, chat_id, apartment, replyMarkup) {
             await bot.telegram.sendPhoto(chat_id, Input.fromURL(photos[0]), {
                 caption: caption,
                 parse_mode: 'HTML',
-                reply_markup: replyMarkup,
+                reply_markup: modifiedReplyMarkup,
             });
         } catch (fallbackError) {
             console.error(`Error sending fallback single photo for apartment ${apartment._id}:`, fallbackError);
             await bot.telegram.sendMessage(chat_id, caption, {
                  parse_mode: 'HTML',
-                 reply_markup: replyMarkup,
+                 reply_markup: modifiedReplyMarkup,
                  disable_web_page_preview: true
             });
         }

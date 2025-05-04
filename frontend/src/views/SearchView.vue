@@ -20,15 +20,21 @@
       </div>
       <div class="form-row slider-row">
         <label class="form-label">Ціна ({{ currencyLabel }})</label>
+        <div class="currency-select">
+          <select v-model="filters.currency" class="custom-select small">
+            <option v-for="curr in currencies" :key="curr.value" :value="curr.value">{{ curr.label }}</option>
+          </select>
+        </div>
         <div class="slider-container">
-           <Slider 
-             v-model="filters.priceRange" 
-             :min="0" 
-             :max="100000" 
-             :step="250" 
-             :format="formatPriceValue" 
+           <Slider
+             v-model="filters.priceRange"
+             :min="priceSliderMin"
+             :max="priceSliderMax"
+             :step="priceSliderStep"
+             :format="formatPriceValue"
              showTooltip="always"
-             class="price-slider"/>
+             class="price-slider"
+           />
         </div>
       </div>
       <div class="form-row slider-row">
@@ -142,7 +148,7 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import Slider from '@vueform/slider'
-import { fetchCities, fetchDistricts, fetchSubwayStations, fetchResidentialComplexes, fetchLandmarks, fetchRieltors, fetchAgencies, createSubscription, updateSubscription } from '../api'
+import { fetchCities, fetchDistricts, fetchSubwayStations, fetchResidentialComplexes, fetchLandmarks, fetchRieltors, fetchAgencies, fetchRates } from '../api'
 import { useCityStore } from '../stores/city'
 import { useTelegram } from '../useTelegram'
 import { useSubscriptionsStore } from '../stores/subscriptions'
@@ -205,6 +211,28 @@ const currencies = [
   { value: 'Eur', label: '€' }
 ]
 const currencyLabel = computed(() => currencies.find(c => c.value === filters.value.currency)?.label || 'грн')
+
+// Reactive currency rates mapping fetched from server
+const currencyRates = ref({ Uah: 1, Usd: 1, Eur: 1 })
+const baseMaxPriceUah = 100000
+const basePriceStepUah = 250
+const priceSliderMin = computed(() => 0)
+const priceSliderMax = computed(() => {
+  const curr = filters.value.currency
+  const rate = currencyRates.value[curr] || 1
+  return Math.round(baseMaxPriceUah * rate)
+})
+const priceSliderStep = computed(() => {
+  const curr = filters.value.currency
+  const rate = currencyRates.value[curr] || 1
+  const step = Math.round(basePriceStepUah * rate)
+  return step > 0 ? step : 1
+})
+
+// Reset priceRange when currency changes
+watch(() => filters.value.currency, () => {
+  filters.value.priceRange = [0, priceSliderMax.value]
+})
 
 const validationErrors = ref([])
 const isLoading = ref(false)
@@ -315,6 +343,13 @@ onMounted(async () => {
   cityStore.setCity(filters.value.city);
   
   await fetchAllOptions()
+  // Fetch currency rates
+  try {
+    const res = await fetchRates()
+    currencyRates.value = res.data || currencyRates.value
+  } catch (e) {
+    console.error('Failed to fetch currency rates:', e)
+  }
 
   const q = route.query
   
