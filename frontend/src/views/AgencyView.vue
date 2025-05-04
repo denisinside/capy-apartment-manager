@@ -103,7 +103,7 @@ function goToRieltor(rieltorName) {
   position: relative;
 }
 .agency-block-fixed {
-  background: #fff;
+  background: var(--color-section-bg);
   border-radius: 16px;
   box-shadow: 0 2px 16px rgba(0,0,0,0.08);
   margin: 0 0 18px 0;
@@ -125,18 +125,18 @@ function goToRieltor(rieltorName) {
 .agency-name {
   font-weight: 700;
   font-size: 20px;
-  color: #222;
+  color: var(--color-text);
   line-height: 1.2;
 }
 .toggle-rieltors-btn {
-  background-color: #f0f0f0;
-  border: 1px solid #ddd;
+  background-color: var(--color-background-soft);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 8px 15px;
   cursor: pointer;
   font-size: 1rem;
   font-weight: 500;
-  color: #555;
+  color: var(--color-text-secondary);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -145,7 +145,7 @@ function goToRieltor(rieltorName) {
   transition: background-color 0.2s;
 }
 .toggle-rieltors-btn:hover {
-  background-color: #e8e8e8;
+  background-color: var(--color-background-mute);
 }
 .toggle-rieltors-btn .arrow {
   font-size: 0.8em;
@@ -158,11 +158,11 @@ function goToRieltor(rieltorName) {
 .rieltor-list-container {
   margin-top: 15px;
   padding-top: 10px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--color-border);
 }
 .loading-small, .no-rieltors {
   text-align: center;
-  color: #888;
+  color: var(--color-text-secondary);
   font-size: 0.95em;
   padding: 10px 0;
 }
@@ -175,7 +175,7 @@ function goToRieltor(rieltorName) {
 }
 .rieltor-item {
   padding: 8px 5px;
-  border-bottom: 1px solid #f5f5f5;
+  border-bottom: 1px solid var(--color-border);
   cursor: pointer;
   display: flex;
   justify-content: space-between;
@@ -183,22 +183,22 @@ function goToRieltor(rieltorName) {
   transition: background-color 0.15s;
 }
 .rieltor-item:hover {
-  background-color: #fafafa;
+  background-color: var(--color-background-mute);
 }
 .rieltor-item:last-child {
   border-bottom: none;
 }
 .rieltor-list-name {
   font-weight: 500;
-  color: #333;
+  color: var(--color-text);
 }
 .rieltor-list-position {
   font-size: 0.9em;
-  color: #777;
+  color: var(--color-text-secondary);
 }
 .apartment-count {
   font-size: 1rem;
-  color: #888;
+  color: var(--color-text-secondary);
   font-weight: 400;
   margin-top: 15px;
   text-align: center;

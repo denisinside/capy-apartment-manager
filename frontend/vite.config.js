@@ -19,10 +19,13 @@ export default defineConfig({
     allowedHosts: ['.ngrok-free.app'],
     proxy: {
       '/api': {
-        target: 'http://4f52-176-36-32-104.ngrok-free.app/',
+        target: 'https://6ee2-176-36-32-104.ngrok-free.app/',
         changeOrigin: true,
         secure: false,
-        ws: true
+        ws: true,
+        headers: {
+          'ngrok-skip-browser-warning': 'true'
+        }
       }
     }
   }

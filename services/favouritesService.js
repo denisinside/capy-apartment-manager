@@ -1,4 +1,5 @@
 import { UserFavourites } from '../models/userFavourites.js';
+import { Apartment } from '../models/apartment.js';
 
 class FavouritesService {
     async getFavourites(userId) {
@@ -25,6 +26,15 @@ class FavouritesService {
 
     async removeAllFavourites(userId) {
         await UserFavourites.findByIdAndDelete(userId);
+    }
+
+    async getFavouriteApartments(userId) {
+        const favouritesDoc = await UserFavourites.findOne({ _id: userId });
+        if (!favouritesDoc || !favouritesDoc.favourites.length) {
+            return [];
+        }
+        const apartments = await Apartment.find({ _id: { $in: favouritesDoc.favourites } });
+        return apartments;
     }
 }
 

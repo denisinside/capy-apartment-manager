@@ -11,50 +11,20 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { fetchApartmentById } from '../api'
 import { useFavouritesStore } from '../stores/favourites'
-import ApartmentCard from './ApartmentCard.vue'
 import ApartmentList from '../components/ApartmentList.vue'
 
 const store = useFavouritesStore()
-const apartments = ref([])
-const loading = ref(false)
-const visibleCount = ref(10)
+const apartments = computed(() => store.favouriteApartments)
+const loading = computed(() => store.loading)
 const removedIds = ref([])
 
-const visibleApartments = computed(() =>
-  apartments.value
-    .filter(item => !removedIds.value.includes(item._id))
-    .slice(0, visibleCount.value)
-)
-
 const visibleApartmentsForList = computed(() =>
-  visibleApartments.value.map(item => ({
+  apartments.value.map(item => ({
     ...item,
     is_favourite: true
   }))
 )
-
-async function loadFavourites() {
-  loading.value = true
-  try {
-    const ids = store.favourites
-    const results = []
-    for (const id of ids) {
-      try {
-        const res = await fetchApartmentById(id)
-        if (res.success && res.data) {
-          const doc = res.data
-          const details = doc.apartment || doc
-          results.push({ _id: doc._id, apartment: details, is_active: doc.is_active })
-        }
-      } catch {}
-    }
-    apartments.value = results
-  } finally {
-    loading.value = false
-  }
-}
 
 function handleCardClick(apt, event) {
   event.stopPropagation()
@@ -71,17 +41,10 @@ function handleScroll() {
   const windowHeight = window.innerHeight
   const docHeight = document.documentElement.scrollHeight
   if (scrollY + windowHeight + 100 >= docHeight) {
-    if (visibleCount.value < apartments.value.length) {
-      visibleCount.value += 10
-    }
   }
 }
 
 onMounted(async () => {
-  if (store.syncFromDB) {
-    await store.syncFromDB()
-  }
-  await loadFavourites()
   window.addEventListener('scroll', handleScroll)
 })
 </script>
@@ -97,10 +60,10 @@ onMounted(async () => {
   align-items: center;
   gap: 12px;
   padding: 18px 12px 8px 12px;
-  background: #fff;
-  border-bottom: 1.5px solid #eab67644;
+  background: var(--color-header-bg);
+  border-bottom: 1.5px solid var(--color-border);
   border-radius: 0 0 18px 18px;
-  box-shadow: 0 2px 12px #eab67611;
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--color-border) 20%, transparent);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -108,18 +71,18 @@ onMounted(async () => {
 .fav-title {
   font-size: 1.4rem;
   font-weight: 700;
-  color: #222;
+  color: var(--color-text);
 }
 .fav-sub {
   font-size: 1.1rem;
-  color: #444;
+  color: var(--color-text-secondary);
   font-weight: 400;
   margin-left: 6px;
 }
 .fav-heart {
   font-size: 2rem;
   margin-left: auto;
-  color: #eab676;
+  color: var(--color-accent);
 }
 .fade-fav-enter-active, .fade-fav-leave-active {
   transition: opacity 0.4s;

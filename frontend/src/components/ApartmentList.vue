@@ -24,13 +24,13 @@ const props = defineProps({
 }
 .loading {
   text-align: center;
-  color: #b48c6e;
+  color: var(--color-hint-color);
   font-size: 1.1rem;
   margin: 18px 0;
 }
 .no-results {
   text-align: center;
-  color: #b00;
+  color: var(--color-hint-color);
   font-size: 1.1rem;
   margin: 18px 0;
 }

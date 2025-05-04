@@ -64,4 +64,15 @@ export const getFavourites = async (req, res) => {
             error: error.message
         });
     }
+};
+
+export const getFavouriteApartments = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const apartments = await favouritesService.getFavouriteApartments(userId);
+        return res.json({ success: true, data: apartments });
+    } catch (error) {
+        console.error('Error in getFavouriteApartments:', error);
+        return res.status(500).json({ success: false, message: 'Failed to get favourite apartments', error: error.message });
+    }
 }; 

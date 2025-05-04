@@ -12,9 +12,11 @@
             <div class="profile-username" v-if="user?.username">@{{ user?.username }}</div>
           </div>
         </div>
-        <div class="profile-row profile-info-row">
-          <span class="profile-icon">📞</span>
-          <span class="profile-info">{{ user?.phone_number || '+380 (12) 345-67-89' }}</span>
+        <div v-if="showAddToHomeScreen" class="add-home-block">
+          <button class="add-home-button" @click="triggerAddToHomeScreen">
+            <img src="/img/capy-logo.png" alt="Add to Home Screen" class="add-home-icon" />
+            Додайте нас на робочий стіл!
+          </button>
         </div>
       </div>
       <div class="profile-menu">
@@ -34,9 +36,6 @@
           <span class="profile-menu-icon">🚪</span> Вийти
         </button>
       </div>
-      <div class="profile-footer-bg">
-        <img src="/skyline.png" class="profile-footer-img" alt="city" />
-      </div>
     </div>
   </div>
 </template>
@@ -44,18 +43,33 @@
 <script setup>
 import { useTelegram } from '../useTelegram'
 import { useRouter } from 'vue-router'
-const { user } = useTelegram()
+import { computed } from 'vue'
+
+const { user, homeScreenStatus, addToHomeScreen: tgAddToHomeScreen } = useTelegram()
 const router = useRouter()
+
+const showAddToHomeScreen = computed(() => {
+  return homeScreenStatus.value === 'missed' || homeScreenStatus.value === 'unknown'
+})
+
 function logout() {
   // TODO: додати реальний логаут
   router.push('/')
+}
+
+function triggerAddToHomeScreen() {
+  if (tgAddToHomeScreen) {
+    tgAddToHomeScreen()
+  } else {
+    console.error('addToHomeScreen function not available')
+  }
 }
 </script>
 
 <style scoped>
 .profile-bg {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f7e6d4 0%, #fff 100%);
+  background: var(--color-background);
   display: flex;
   flex-direction: column;
 }
@@ -73,12 +87,12 @@ function logout() {
 .profile-app-title {
   font-size: 1.4rem;
   font-weight: 700;
-  color: #b48c6e;
+  color: var(--color-accent);
   letter-spacing: 0.5px;
   margin-bottom: 8px;
 }
 .profile-card {
-  background: #fff;
+  background: var(--color-section-bg);
   border-radius: 16px;
   box-shadow: 0 2px 8px #0001;
   margin: 0 16px 18px 16px;
@@ -103,25 +117,25 @@ function logout() {
   height: 64px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #eab676;
+  border: 2px solid var(--color-accent);
 }
 .profile-name {
   font-size: 18px;
   font-weight: bold;
-  color: #b48c6e;
+  color: var(--color-text);
 }
 .profile-username {
-  color: #888;
+  color: var(--color-text-secondary);
   font-size: 15px;
 }
 .profile-info-row {
   font-size: 16px;
-  color: #444;
+  color: var(--color-text);
   gap: 8px;
 }
 .profile-icon {
   font-size: 18px;
-  color: #b48c6e;
+  color: var(--color-accent);
 }
 .profile-info {
   font-size: 16px;
@@ -138,11 +152,11 @@ function logout() {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: #fff;
-  border: 1px solid #eab676;
+  background: var(--color-background-soft);
+  border: 1px solid var(--color-border);
   border-radius: 10px;
   padding: 12px 14px;
-  color: #222;
+  color: var(--color-text);
   font-size: 16px;
   font-weight: 500;
   text-decoration: none;
@@ -151,12 +165,12 @@ function logout() {
   cursor: pointer;
 }
 .profile-menu-btn:hover {
-  background: #f7e6d4;
+  background: var(--color-background-mute);
 }
 .profile-menu-btn.logout {
-  background: #ffe0e0;
-  color: #c44;
-  border: 1px solid #f5b6b6;
+  background: color-mix(in srgb, var(--color-destructive) 15%, var(--color-background-soft));
+  color: var(--color-destructive);
+  border: 1px solid color-mix(in srgb, var(--color-destructive) 30%, var(--color-border));
 }
 .profile-menu-icon {
   font-size: 20px;
@@ -177,5 +191,45 @@ function logout() {
   object-fit: cover;
   opacity: 0.4;
   display: block;
+}
+n {
+  background: var(--color-background-soft);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 0 16px 18px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  box-shadow: 0 1px 4px #0001;
+}
+.add-home-text {
+  color: var(--color-text);
+  font-size: 15px;
+  font-weight: 500;
+}
+.add-home-button {
+  background: var(--color-accent);
+  color: white;
+  border: none;
+  width: 100%;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.add-home-button:hover {
+  background: color-mix(in srgb, var(--color-accent) 85%, black);
+}
+.add-home-icon {
+  font-size: 18px;
+  width: 48px;
+  height: 48px;
 }
 </style>

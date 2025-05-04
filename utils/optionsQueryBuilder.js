@@ -38,19 +38,12 @@ export function buildQuery(subscriptionOptions) {
     }
 
     // Room count filter
-    if (subscriptionOptions.rooms) {
-        query['apartment.characteristics.room_count'] = {};
-        if (subscriptionOptions.rooms.min !== 0) {
-            query['apartment.characteristics.room_count'] = {
-                $gte: subscriptionOptions.rooms.min,
-            };
-        }
-        if (subscriptionOptions.rooms.max !== 0) {
-            query['apartment.characteristics.room_count'] = {
-                $lte: subscriptionOptions.rooms.max,
-            };
-        }
+    if (Array.isArray(subscriptionOptions.rooms) && subscriptionOptions.rooms.length > 0) {
+        // If rooms is a non-empty array, use $in to match exact room counts
+        query['apartment.characteristics.room_count'] = { $in: subscriptionOptions.rooms };
     }
+    // If subscriptionOptions.rooms is undefined, null, or an empty array, 
+    // no filter is added for room_count, matching apartments with any number of rooms.
 
     // Floor filter
     if (subscriptionOptions.floor) {

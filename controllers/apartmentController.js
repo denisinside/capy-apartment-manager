@@ -175,7 +175,7 @@ export const getApartmentsByAgency = async (req, res) => {
 // Новий контролер для отримання рієлторів за агентством
 export const getRieltorsByAgency = async (req, res) => {
     try {
-        const { agencyName } = req.params; // Беремо назву з параметрів маршруту
+        const { agencyName } = req.params;
         const realtors = await apartmentService.getRieltorsByAgency(agencyName);
         res.json({ success: true, data: realtors });
     } catch (error) {

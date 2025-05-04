@@ -13,6 +13,16 @@
       @touchend="touchEndGallery"
     >
       <img :src="apartment.photo[galleryIndex]" class="gallery-photo" />
+      <button 
+        class="share-btn-gallery" 
+        @click.stop="shareApartment" 
+        :disabled="isSharingApartment"
+        @mousedown.stop 
+        @touchstart.stop
+      >
+        <svg v-if="!isSharingApartment" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 16.08C17.24 16.08 16.56 16.38 16.04 16.85L8.91 12.7C8.96 12.47 9 12.24 9 12C9 11.76 8.96 11.53 8.91 11.3L15.96 7.22C16.5 7.69 17.21 8 18 8C19.66 8 21 6.66 21 5C21 3.34 19.66 2 18 2C16.34 2 15 3.34 15 5C15 5.24 15.04 5.47 15.09 5.7L8.04 9.78C7.5 9.31 6.79 9 6 9C4.34 9 3 10.34 3 12C3 13.66 4.34 15 6 15C6.79 15 7.5 14.69 8.04 14.22L15.15 18.35C15.1 18.58 15.06 18.81 15.06 19.05C15.06 20.71 16.4 22.05 18.06 22.05C19.72 22.05 21.06 20.71 21.06 19.05C21.06 17.39 19.72 16.05 18.06 16.05H18V16.08Z" fill="white"/></svg>
+        <span v-else>...</span>
+      </button>
       <div v-if="apartment.photo.length > 1" class="gallery-controls">
         <button @click.stop="prevPhoto">‹</button>
         <span>{{ galleryIndex + 1 }}/{{ apartment.photo.length }}</span>
@@ -142,6 +152,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import axios from 'axios'
 import { fetchApartmentById } from '../api.js'
 import { useFavouritesStore } from '../stores/favourites'
 import BackButton from '../components/BackButton.vue'
@@ -156,13 +167,14 @@ const galleryIndex = ref(0)
 const showPhotoModal = ref(false)
 const modalPhotoIndex = ref(0)
 const priceHistory = ref([])
-const { tg } = useTelegram()
+const { tg, user, isReady } = useTelegram()
+const isSharingApartment = ref(false)
 
-// Для свайпів у галереї
+const API_BASE_URL = import.meta.env.VITE_SERVER_BASE || 'http://localhost:3000'
+
 const galleryTouchStartX = ref(0)
 const galleryTouchEndX = ref(0)
 
-// Для свайпів у модалці
 const modalTouchStartX = ref(0)
 const modalTouchEndX = ref(0)
 
@@ -255,7 +267,6 @@ function prevModalPhoto() {
     modalPhotoIndex.value = apartment.value.photo.length - 1
   }
 }
-// --- Свайпы для галереї ---
 function touchStartGallery(e) {
   galleryTouchStartX.value = e.changedTouches[0].screenX
 }
@@ -271,7 +282,6 @@ function touchEndGallery(e) {
     prevPhoto()
   }
 }
-// --- Свайпы для модалки ---
 function touchStartModal(e) {
   modalTouchStartX.value = e.changedTouches[0].screenX
 }
@@ -363,6 +373,54 @@ function goToRieltor() {
 function goToAgency() {
   router.push({ name: 'agency', params: { name: apartment.value.rieltor.rieltor_agency } })
 }
+
+async function shareApartment() {
+  if (!tg || !isReady.value || !user.value?.id || !apartment.value?._id) {
+    console.error('Telegram WebApp is not ready, user ID or apartment ID is missing.');
+    alert('Помилка: Неможливо поділитися оголошенням зараз.');
+    return;
+  }
+
+  if (isSharingApartment.value) return;
+  isSharingApartment.value = true;
+
+  try {
+    const response = await axios.post(`/api/bot/prepare-apartment-share`, {
+      userId: user.value.id,
+      apartmentId: apartment.value._id
+    });
+
+    if (response.data && response.data.success && response.data.preparedMessageId) {
+      const preparedMessageId = response.data.preparedMessageId;
+      console.log('Received prepared apartment messageId:', preparedMessageId);
+
+      if (tg.shareMessage) {
+        tg.shareMessage(preparedMessageId, (sent) => {
+          if (sent) {
+            console.log('Apartment shared successfully via bot.');
+            tg.showAlert('Оголошення успішно надіслано!');
+          } else {
+            console.warn('User cancelled sharing apartment or it failed.');
+            tg.showAlert('Надсилання скасовано.');
+          }
+        });
+      } else {
+        console.error('tg.shareMessage is not available in this Telegram version.');
+        tg.showAlert('Функція поділитися повідомленням не доступна у вашій версії Telegram.');
+      }
+    } else {
+      console.error('Failed to prepare apartment message:', response.data);
+      tg.showAlert('Помилка підготовки оголошення для надсилання.');
+    }
+
+  } catch (error) {
+    console.error('Error sharing apartment via bot:', error);
+    const errorMessage = error.response?.data?.message || error.message || 'Невідома помилка сервера.';
+    tg.showAlert(`Помилка: ${errorMessage}`);
+  } finally {
+    isSharingApartment.value = false;
+  }
+}
 </script>
 
 <style scoped>
@@ -370,7 +428,7 @@ function goToAgency() {
   position: relative;
   max-width: 500px;
   margin: 0 auto;
-  background: #fff;
+  background: var(--color-background);
   border-radius: 16px;
   box-shadow: 0 2px 16px rgba(0,0,0,0.08);
   padding: 0 0 10px 0;
@@ -379,7 +437,7 @@ function goToAgency() {
 .gallery {
   width: 100%;
   position: relative;
-  background: #222;
+  background: var(--color-background-mute);
   border-radius: 16px 16px 0 0;
   overflow: hidden;
   min-height: 220px;
@@ -393,7 +451,7 @@ function goToAgency() {
   max-height: 320px;
   object-fit: cover;
   display: block;
-  border-bottom: 5px solid #A6844E;
+  border-bottom: 5px solid var(--color-accent);
 }
 .gallery-controls {
   position: absolute;
@@ -401,17 +459,19 @@ function goToAgency() {
   left: 0;
   width: 100%;
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   gap: 16px;
-  color: #fff;
+  color: var(--color-text);
   font-size: 18px;
   z-index: 2;
+  padding-left: 16px;
+  padding-right: 50px;
 }
 .gallery-controls button {
-  background: rgba(0,0,0,0.5);
-  color: #fff;
-  border: none;
+  background: color-mix(in srgb, var(--color-background) 50%, transparent);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
   border-radius: 50%;
   width: 36px;
   height: 36px;
@@ -440,7 +500,7 @@ function goToAgency() {
 .price {
   font-size: 28px;
   font-weight: 600;
-  color: #222;
+  color: var(--color-text);
   line-height: 1.1;
 }
 .sub-row {
@@ -451,7 +511,7 @@ function goToAgency() {
 }
 .city-district {
   font-size: 18px;
-  color: #a00;
+  color: var(--color-accent);
   line-height: 1.1;
 }
 .city-district span {
@@ -461,7 +521,7 @@ function goToAgency() {
   width: 110px;
   min-width: 90px;
   font-size: 16px;
-  color: #555;
+  color: var(--color-text-secondary);
   text-align: right;
   flex-shrink: 0;
   line-height: 1.1;
@@ -469,7 +529,7 @@ function goToAgency() {
 .street {
   font-size: clamp(16px, 5vw, 28px);
   font-weight: 600;
-  color: #555;
+  color: var(--color-text);
   text-align: left;
   line-height: 1.1;
   letter-spacing: -0.5px;
@@ -482,6 +542,7 @@ function goToAgency() {
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
+  color: var(--color-text);
 }
 .metro-icon {
   width: 22px;
@@ -502,13 +563,13 @@ function goToAgency() {
   display: flex;
   gap: 8px;
   font-size: 15px;
-  color: #333;
+  color: var(--color-text);
   margin-bottom: 10px;
   align-items: center;
 }
 .characteristics-block .dot {
   font-size: 10px;
-  color: #bbb;
+  color: var(--color-hint-color);
   margin: 0 4px;
   user-select: none;
 }
@@ -519,7 +580,7 @@ function goToAgency() {
   margin-top: 2px;
 }
 .permit-card {
-  background: #f5f0f0;
+  background: var(--color-background-soft);
   border-radius: 10px;
   padding: 8px 12px 6px 10px;
   display: flex;
@@ -527,7 +588,7 @@ function goToAgency() {
   min-width: 90px;
   font-size: 15px;
   font-weight: 500;
-  color: #444;
+  color: var(--color-text);
   box-shadow: 0 1px 2px rgba(0,0,0,0.03);
 }
 .permit-icon {
@@ -539,13 +600,13 @@ function goToAgency() {
 .permit-text {
   font-size: 15px;
   font-weight: 500;
-  color: #444;
+  color: var(--color-text);
   white-space: pre-line;
   line-height: 1.1;
 }
 .description-block {
   font-size: 15px;
-  color: #444;
+  color: var(--color-text);
   margin-bottom: 8px;
 }
 .rieltor-block-fixed {
@@ -553,9 +614,9 @@ function goToAgency() {
   left: 0;
   right: 0;
   bottom: 50px;
-  background: #fff;
+  background: var(--color-bottom-bar-bg);
   z-index: 100;
-  box-shadow: 0 -2px 12px #0001;
+  box-shadow: 0 -2px 12px color-mix(in srgb, var(--color-border) 20%, transparent);
   padding: 10px 18px 10px 18px;
   border-radius: 16px 16px 0 0;
   display: flex;
@@ -585,16 +646,16 @@ function goToAgency() {
 .rieltor-name {
   font-weight: 600;
   font-size: 15px;
-  color: #222;
+  color: var(--color-text);
   line-height: 1.1;
 }
 .rieltor-position {
   font-size: 13px;
-  color: #888;
+  color: var(--color-text-secondary);
 }
 .rieltor-agency {
   font-size: 15px;
-  color: #a05c3c;
+  color: var(--color-link);
   font-weight: 600;
   cursor: pointer;
   margin-left: 12px;
@@ -618,13 +679,13 @@ function goToAgency() {
   cursor: pointer;
 }
 .call-btn {
-  background: #f5c242;
-  color: #222;
+  background: var(--color-button);
+  color: var(--color-button-text);
 }
 .msg-btn {
-  background: #fff;
-  color: #a00;
-  border: 1px solid #a00;
+  background: var(--color-background-soft);
+  color: var(--color-link);
+  border: 1px solid var(--color-link);
 }
 .loading {
   text-align: center;
@@ -633,7 +694,6 @@ function goToAgency() {
   font-size: 18px;
 }
 
-/* Модалка для фото */
 .photo-modal {
   position: fixed;
   z-index: 1000;
@@ -725,9 +785,10 @@ function goToAgency() {
   cursor: pointer;
   z-index: 20;
   padding: 4px;
+  color: var(--color-hint-color);
 }
 .fav-btn.liked span {
-  color: #e74c3c;
+  color: var(--color-destructive);
 }
 .landmarks-block {
   display: flex;
@@ -736,16 +797,16 @@ function goToAgency() {
   margin-bottom: 12px;
 }
 .landmark, .residential-complex {
-  background: #f5f0f0;
+  background: var(--color-background-soft);
   border-radius: 16px;
   padding: 6px 12px;
   font-size: 14px;
-  color: #444;
+  color: var(--color-link);
 }
 .price-history-block {
   margin: 24px 0 0 0;
-  color: #222;
-  background: #fff;
+  color: var(--color-text);
+  background: var(--color-background-soft);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
   padding: 0 0 0 0;
@@ -754,7 +815,7 @@ function goToAgency() {
   font-size: 1.5rem;
   font-weight: 700;
   margin: 0 0 8px 0;
-  padding: 0 0 0 0;
+  padding: 12px 12px 0 12px;
 }
 .price-history-table {
   width: 100%;
@@ -763,14 +824,14 @@ function goToAgency() {
   font-size: 1.1rem;
 }
 .price-history-table tr {
-  border-bottom: 1px solid #ececec;
+  border-bottom: 1px solid var(--color-border);
 }
 .price-history-table tr:last-child {
   border-bottom: none;
 }
 .ph-date {
-  color: #888;
-  padding: 8px 0 8px 0;
+  color: var(--color-text-secondary);
+  padding: 8px 12px;
   min-width: 110px;
   font-size: 1rem;
 }
@@ -781,7 +842,7 @@ function goToAgency() {
   text-align: left;
 }
 .ph-up {
-  color: #e74c3c;
+  color: var(--color-destructive);
 }
 .ph-down {
   color: #27ae60;
@@ -791,10 +852,50 @@ function goToAgency() {
   font-size: 1.2rem;
   text-align: right;
   min-width: 120px;
+  padding: 8px 12px;
 }
 .ph-currency {
   font-weight: 500;
   font-size: 1rem;
-  color: #222;
+  color: var(--color-text);
+}
+
+.share-btn-gallery {
+  position: absolute;
+  bottom: 12px;
+  right: 16px;
+  background-color: color-mix(in srgb, var(--color-background) 60%, transparent);
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 15;
+  transition: background-color 0.2s;
+  padding: 0;
+}
+
+.share-btn-gallery:hover {
+  background-color: color-mix(in srgb, var(--color-background) 80%, transparent);
+}
+
+.share-btn-gallery svg path {
+  fill: var(--color-text);
+}
+
+.share-btn-gallery:disabled {
+    background-color: color-mix(in srgb, var(--color-text-secondary) 30%, transparent);
+    cursor: not-allowed;
+}
+
+.share-btn-gallery:disabled svg path {
+    fill: var(--color-text-secondary);
+}
+
+.share-btn-gallery:disabled span {
+    color: var(--color-text-secondary);
 }
 </style> 

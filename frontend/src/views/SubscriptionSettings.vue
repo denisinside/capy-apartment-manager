@@ -60,7 +60,7 @@ onMounted(async () => {
   isLoading.value = true;
   try {
     // Викликаємо синхронізацію, якщо стор порожній
-    await subscriptionsStore.syncFromDBIfEmpty();
+    await subscriptionsStore.syncFromDB();
   } catch (error) {
     console.error("Failed to fetch subscriptions:", error);
     // Можна показати повідомлення про помилку
@@ -225,14 +225,14 @@ const goToSearch = () => {
   padding-bottom: 80px; /* Відступ для кнопки Створити */
   position: relative;
   min-height: 100vh;
-  background-color: #f8f8f8; /* Трохи світліший фон */
+  background-color: var(--color-background); /* Use main background */
 }
 
 .page-title {
   text-align: center;
   font-size: 1.6em;
   margin-bottom: 25px;
-  color: #b48c6e;
+  color: var(--color-text); /* Use main text */
 }
 
 .subscriptions-list {
@@ -245,7 +245,7 @@ const goToSearch = () => {
 }
 
 .subscription-item {
-  background-color: #fff;
+  background-color: var(--color-background-soft); /* Use soft background */
   border-radius: 12px;
   padding: 15px;
   display: flex;
@@ -267,7 +267,7 @@ const goToSearch = () => {
 .subscription-title {
   margin: 0 0 10px 0;
   font-size: 1.2em;
-  color: #333;
+  color: var(--color-text); /* Use main text */
   font-weight: 600;
 }
 
@@ -278,8 +278,8 @@ const goToSearch = () => {
 }
 
 .tag {
-  background-color: #eef; /* Світло-синій фон для тегів */
-  color: #448; /* Темно-синій текст */
+  background-color: var(--color-background-mute); /* Use muted background */
+  color: var(--color-text-secondary); /* Use secondary text */
   border-radius: 15px;
   padding: 4px 10px;
   font-size: 0.85em;
@@ -303,26 +303,26 @@ const goToSearch = () => {
 }
 
 .edit-button {
-  color: #55a; /* Синій для редагування */
+  color: var(--color-link); /* Use link color */
 }
 
 .delete-button {
-  color: #c55; /* Червоний для видалення */
+  color: var(--color-destructive); /* Use destructive color */
 }
 
 .action-button:hover {
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: var(--color-background-mute); /* Use muted background on hover */
 }
 
 .loading-message, .empty-message {
   text-align: center;
   margin-top: 40px;
   font-size: 1.1em;
-  color: #666;
+  color: var(--color-text-secondary); /* Use secondary text */
 }
 
 .empty-message a {
-    color: #b48c6e;
+    color: var(--color-link); /* Use link color */
     text-decoration: underline;
     margin-left: 5px;
 }
@@ -336,8 +336,8 @@ const goToSearch = () => {
 }
 
 .add-new-button {
-    background: linear-gradient(90deg, #eab676 0%, #b48c6e 100%);
-    color: #fff;
+    background: var(--color-button); /* Use button color */
+    color: var(--color-button-text); /* Use button text */
     border: none;
     border-radius: 20px;
     padding: 10px 20px;
@@ -349,7 +349,7 @@ const goToSearch = () => {
 }
 
 .add-new-button:hover {
-    transform: translateY(-2px);
+    filter: brightness(0.95);
     box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
 }
 

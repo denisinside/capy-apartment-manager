@@ -25,7 +25,7 @@
              v-model="filters.priceRange" 
              :min="0" 
              :max="100000" 
-             :step="1000" 
+             :step="250" 
              :format="formatPriceValue" 
              showTooltip="always"
              class="price-slider"/>
@@ -37,8 +37,8 @@
            <Slider 
              v-model="filters.areaRange" 
              :min="10" 
-             :max="500" 
-             :step="5" 
+             :max="150" 
+             :step="2" 
              :format="formatAreaValue"
              showTooltip="always"
              class="area-slider"/>
@@ -50,7 +50,7 @@
             <Slider 
               v-model="filters.floorRange" 
               :min="1" 
-              :max="50" 
+              :max="40" 
               :step="1"
               :format="formatFloorValue"
               showTooltip="always"
@@ -361,10 +361,11 @@ onMounted(async () => {
   }
 })
 
-async function onSearch() {
-  if (!validateForm()) return
+// --- Subscription Bell Logic ---
 
-  const subscriptionOptions = {
+// Helper to build subscription options object from filters
+function buildSubscriptionOptionsFromFilters() {
+    const options = {
       city: filters.value.city,
       price: {
           min: filters.value.priceRange[0] > 0 ? filters.value.priceRange[0] : undefined,
@@ -373,11 +374,11 @@ async function onSearch() {
       },
       area: {
           min: filters.value.areaRange[0] > 10 ? filters.value.areaRange[0] : undefined,
-          max: filters.value.areaRange[1] < 500 ? filters.value.areaRange[1] : undefined,
+          max: filters.value.areaRange[1] < 500 ? filters.value.areaRange[1] : undefined, // Assuming 500 max, adjust if needed
       },
       floor: {
           min: filters.value.floorRange[0] > 1 ? filters.value.floorRange[0] : undefined,
-          max: filters.value.floorRange[1] < 50 ? filters.value.floorRange[1] : undefined,
+          max: filters.value.floorRange[1] < 50 ? filters.value.floorRange[1] : undefined, // Assuming 50 max, adjust if needed
       },
       rooms: filters.value.rooms.length ? filters.value.rooms : undefined,
       districts: filters.value.districts.length ? filters.value.districts : undefined,
@@ -387,37 +388,139 @@ async function onSearch() {
       allowPets: filters.value.allowPets || undefined,
       allowChildren: filters.value.allowChildren || undefined,
       bargain: filters.value.bargain || undefined,
-      commissionRate: filters.value.noCommission ? 0 : (filters.value.commissionRateMin || undefined),
+      // Handle commission
+      commissionRate: undefined, // Will be set below
+      commissionPrice: undefined // Assuming price is not used in filters yet
   };
 
-  if (filters.value.noCommission) {
-      subscriptionOptions.commissionRate = 0;
+   if (filters.value.noCommission) {
+      options.commissionRate = 0;
+  } else {
+      // Use commissionRateMin as the rate if provided
+      if (filters.value.commissionRateMin !== '' && filters.value.commissionRateMin !== null && filters.value.commissionRateMin >= 0) {
+          options.commissionRate = Number(filters.value.commissionRateMin);
+      }
+      // Handle commissionRateMax if needed - depends on how backend stores/matches ranges
+      // If backend only stores a single rate, we might only use min.
+      // If backend stores min/max, we need to pass max too.
+      // Current schema seems to have only commissionRate and commissionPrice.
   }
 
-  Object.keys(subscriptionOptions).forEach(key => {
-      if (subscriptionOptions[key] === undefined) {
-          delete subscriptionOptions[key];
-      } else if (typeof subscriptionOptions[key] === 'object' && subscriptionOptions[key] !== null && !Array.isArray(subscriptionOptions[key])) {
+  // Clean up undefined/empty values
+  Object.keys(options).forEach(key => {
+      if (options[key] === undefined) {
+          delete options[key];
+      } else if (typeof options[key] === 'object' && options[key] !== null && !Array.isArray(options[key])) {
           let isEmpty = true;
-          Object.keys(subscriptionOptions[key]).forEach(subKey => {
-              if (subscriptionOptions[key][subKey] !== undefined) {
+          Object.keys(options[key]).forEach(subKey => {
+              if (options[key][subKey] !== undefined) {
                   isEmpty = false;
               } else {
-                  delete subscriptionOptions[key][subKey];
+                  delete options[key][subKey];
               }
           });
           if (isEmpty) {
-              delete subscriptionOptions[key];
+              delete options[key];
           }
       }
   });
 
+  return options;
+}
+
+// Re-use normalization logic from SearchResultView (could be moved to a utility file)
+function normalizeOptionsForComparison(options) {
+     const normalized = {};
+    for (const key in options) {
+        let value = options[key];
+        if (value === undefined || value === null || value === '') continue; 
+        // Basic normalization - assumes structure is already object-like
+         if (key === 'price' || key === 'area' || key === 'floor') {
+             // Ensure min/max are numbers or undefined
+             const normObj = {};
+             if (value.min !== undefined && value.min !== null) normObj.min = Number(value.min);
+             if (value.max !== undefined && value.max !== null) normObj.max = Number(value.max);
+             if (key === 'price' && value.currency) normObj.currency = value.currency;
+             // Keep object only if it has keys
+             if (Object.keys(normObj).length > 0) normalized[key] = normObj;
+         } else if (key === 'rooms' && Array.isArray(value)) {
+              normalized[key] = value.map(Number).sort(); // Ensure numbers and sort
+         } else if (Array.isArray(value)) {
+             normalized[key] = [...value].sort(); // Sort string arrays
+         } else {
+            normalized[key] = value; 
+         }
+    }
+     // Remove empty objects that might result from normalization
+    for (const key in normalized) {
+       if (typeof normalized[key] === 'object' && normalized[key] !== null && !Array.isArray(normalized[key])) {
+           if (Object.keys(normalized[key]).length === 0) {
+               delete normalized[key];
+           }
+       }
+    }
+    return normalized;
+}
+
+function sortObjectKeys(obj) {
+    if (typeof obj !== 'object' || obj === null) return obj;
+    if (Array.isArray(obj)) return obj.map(sortObjectKeys).sort(); 
+    return Object.keys(obj).sort().reduce((acc, key) => {
+        acc[key] = sortObjectKeys(obj[key]);
+        return acc;
+    }, {});
+}
+
+const matchingSubscriptionId = computed(() => {
+    const currentOptions = normalizeOptionsForComparison(buildSubscriptionOptionsFromFilters());
+    const currentOptionsString = JSON.stringify(sortObjectKeys(currentOptions));
+    
+    const foundSub = subscriptionsStore.subscriptions.find(sub => {
+        const subOptions = normalizeOptionsForComparison(sub.subscriptionOptions);
+        return JSON.stringify(sortObjectKeys(subOptions)) === currentOptionsString;
+    });
+    return foundSub?._id || null;
+});
+
+const isSubscribedToCurrentFilters = computed(() => !!matchingSubscriptionId.value);
+
+async function toggleSubscriptionForFilters() {
+    if (!userId) return;
+
+    if (isSubscribedToCurrentFilters.value && matchingSubscriptionId.value) {
+        try {
+            await subscriptionsStore.removeSubscription(matchingSubscriptionId.value);
+            console.log("Subscription removed via bell");
+             if (tg && tg.notificationOccurred) tg.notificationOccurred('removed'); // Haptic feedback
+        } catch (error) {
+            console.error("Failed to remove subscription:", error);
+        }
+    } else {
+        const subscriptionOptions = buildSubscriptionOptionsFromFilters();
+        try {
+            await subscriptionsStore.addSubscription(subscriptionOptions);
+            console.log("Subscription added via bell");
+             if (tg && tg.notificationOccurred) tg.notificationOccurred('added'); // Haptic feedback
+        } catch (error) {
+            console.error("Failed to add subscription:", error);
+        }
+    }
+}
+
+// --- End Subscription Bell Logic ---
+
+async function onSearch() {
+  if (!validateForm()) return
+
+  const subscriptionOptions = buildSubscriptionOptionsFromFilters(); // Use the helper
+
   isLoading.value = true;
   try {
       if (isEditing.value) {
-          const result = await updateSubscription(editingSubscriptionId.value, userId, subscriptionOptions);
-          console.log('Subscription updated:', result);
-          await subscriptionsStore.syncFromDBIfEmpty();
+          // Use store's updateSubscription
+          await subscriptionsStore.updateSubscription(editingSubscriptionId.value, subscriptionOptions);
+          console.log('Subscription updated via form save');
+          // await subscriptionsStore.syncFromDB(); // Sync might be redundant if updateSubscription updates local state
           if (tg && tg.showAlert) tg.showAlert('Підписку успішно оновлено!');
           router.push({ name: 'SubscriptionSettings' });
 
@@ -466,10 +569,10 @@ async function onSearch() {
 }
 
 .price-slider, .area-slider, .floor-slider {
-  --slider-connect-bg: #b48c6e; 
-  --slider-tooltip-bg: #b48c6e;
-  --slider-handle-ring-color: #eab67630;
-  --slider-handle-bg: #b48c6e;
+  --slider-connect-bg: var(--color-button); 
+  --slider-tooltip-bg: var(--color-button);
+  --slider-handle-ring-color: color-mix(in srgb, var(--color-button) 30%, transparent);
+  --slider-handle-bg: var(--color-button);
   --slider-handle-shadow: none;
   --slider-handle-shadow-active: none;
   --slider-handle-ring-width: 3px;
@@ -484,15 +587,15 @@ async function onSearch() {
 }
 
 .icon-filter-btn {
-  background: #ededed;
+  background: var(--color-background-soft);
   border-radius: 8px;
   padding: 8px 14px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   font-weight: 500;
-  color: #444;
-  border: 1.5px solid #e0e0e0;
+  color: var(--color-text);
+  border: 1.5px solid var(--color-border);
   cursor: pointer;
   transition: all 0.2s ease-in-out;
   font-size: 0.95rem;
@@ -504,10 +607,10 @@ async function onSearch() {
 }
 
 .icon-filter-btn.active {
-  background: #eab676;
-  color: #fff;
-  border-color: #b48c6e;
-  box-shadow: 0 2px 5px rgba(180, 140, 110, 0.3);
+  background: var(--color-button);
+  color: var(--color-button-text);
+  border-color: var(--color-button);
+  box-shadow: 0 2px 5px color-mix(in srgb, var(--color-button) 30%, transparent);
 }
 </style>
 
@@ -516,16 +619,46 @@ async function onSearch() {
   padding: 16px 0 72px 0;
   max-width: 480px;
   margin: 0 auto;
+  position: relative; /* Needed for absolute positioning of the bell */
 }
+
+.subscribe-bell-btn {
+    position: absolute;
+    top: 10px; /* Adjust as needed */
+    right: 10px; /* Adjust as needed */
+    z-index: 5; 
+    /* Reuse styles from SearchResultView icon-btn */
+    background: var(--color-background-soft);
+    border: 1.5px solid var(--color-border);
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--color-border) 20%, transparent);
+    cursor: pointer;
+    transition: background 0.2s, border 0.2s, box-shadow 0.2s;
+    font-size: 2rem;
+    color: var(--color-text);
+}
+
+.subscribe-bell-btn.active {
+    background: var(--color-button);
+    border-color: var(--color-button);
+    color: var(--color-button-text);
+    box-shadow: 0 4px 16px color-mix(in srgb, var(--color-button) 30%, transparent);
+}
+
 .search-title {
   text-align: center;
   font-size: 2rem;
   font-weight: 700;
   margin-bottom: 12px;
-  color: #b48c6e;
+  color: var(--color-accent);
 }
 .search-form {
-  background: #fff;
+  background: var(--color-section-bg);
   border-radius: 18px;
   box-shadow: 0 4px 24px #0002;
   margin: 12px 0 24px 0;
@@ -543,7 +676,7 @@ async function onSearch() {
 .form-label {
   min-width: 90px;
   font-weight: 500;
-  color: #b48c6e;
+  color: var(--color-text-secondary);
   font-size: 1rem;
 }
 .input-group {
@@ -552,22 +685,24 @@ async function onSearch() {
   align-items: center;
 }
 .input-group input {
-  border: 1px solid #eab676;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 7px 12px;
   font-size: 1rem;
   width: 90px;
   outline: none;
   transition: border 0.2s;
+  background-color: var(--color-background);
+  color: var(--color-text);
 }
 .input-group input:focus {
-  border: 1.5px solid #b48c6e;
+  border: 1.5px solid var(--color-link);
 }
 .custom-select {
   position: relative;
-  background: #f8f8f8;
-  border: 1px solid #eab676;
-  color: #111;
+  background: var(--color-background-soft);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
   border-radius: 8px;
   padding: 7px 12px;
   min-width: 120px;
@@ -581,6 +716,9 @@ async function onSearch() {
   min-width: 60px;
   padding: 7px 8px;
 }
+.custom-select svg path {
+    stroke: var(--color-hint-color);
+}
 .dropdown-arrow {
   margin-left: 4px;
   pointer-events: none;
@@ -589,8 +727,8 @@ async function onSearch() {
   position: absolute;
   left: 0;
   top: 110%;
-  background: #fff;
-  border: 1px solid #eab676;
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   box-shadow: 0 2px 12px #0001;
   z-index: 10;
@@ -605,34 +743,35 @@ async function onSearch() {
   padding: 10px 16px;
   cursor: pointer;
   transition: background 0.15s;
-  color: #333;
+  color: var(--color-text);
   font-weight: 500;
 }
 .dropdown-list li:hover {
-  background: #f5e6d6;
+  background: var(--color-background-mute);
 }
 .room-btns {
   display: flex;
   gap: 8px;
 }
 .room-btns button {
-  background: #f5f5f5;
-  border: 1.5px solid #eab676;
+  background: var(--color-background-soft);
+  border: 1.5px solid var(--color-border);
   border-radius: 8px;
   padding: 7px 16px;
   font-size: 1rem;
   cursor: pointer;
   transition: background 0.2s, color 0.2s, border 0.2s;
+  color: var(--color-text);
 }
 .room-btns button.active {
-  background: #eab676;
-  color: #fff;
-  border-color: #b48c6e;
+  background: var(--color-button);
+  color: var(--color-button-text);
+  border-color: var(--color-button);
 }
 .multi-select {
   position: relative;
-  background: #f8f8f8;
-  border: 1px solid #eab676;
+  background: var(--color-background-soft);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   min-width: 120px;
   padding: 7px 12px;
@@ -649,8 +788,8 @@ async function onSearch() {
   gap: 6px;
 }
 .tag {
-  background: #eab676;
-  color: #fff;
+  background: var(--color-button);
+  color: var(--color-button-text);
   border-radius: 6px;
   padding: 3px 10px 3px 8px;
   font-size: 0.95rem;
@@ -662,7 +801,7 @@ async function onSearch() {
   margin-left: 2px;
   font-size: 1.1em;
   cursor: pointer;
-  color: #fff;
+  color: var(--color-button-text);
   opacity: 0.7;
   transition: opacity 0.2s;
 }
@@ -670,7 +809,7 @@ async function onSearch() {
   opacity: 1;
 }
 .placeholder {
-  color: #888;
+  color: var(--color-text-secondary);
   font-size: 0.97em;
 }
 .toggles-row, .commission-row {
@@ -680,25 +819,25 @@ async function onSearch() {
   flex-wrap: wrap;
 }
 .toggle-group, .icon-filter-btn {
-  background: #ededed;
+  background: var(--color-background-soft);
   border-radius: 8px;
   padding: 8px 14px;
   display: flex;
   align-items: center;
   gap: 7px;
   font-weight: 500;
-  color: #444;
-  border: 1.5px solid #eab676;
+  color: var(--color-text);
+  border: 1.5px solid var(--color-border);
   cursor: pointer;
   transition: background 0.2s, color 0.2s, border 0.2s, box-shadow 0.2s;
-  box-shadow: 0 2px 8px #eab67622;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-border) 20%, transparent);
   font-size: 1rem;
 }
 .icon-filter-btn.active {
-  background: linear-gradient(90deg, #eab676 0%, #b48c6e 100%);
-  color: #fff;
-  border-color: #b48c6e;
-  box-shadow: 0 4px 16px #eab67644;
+  background: var(--color-button);
+  color: var(--color-button-text);
+  border-color: var(--color-button);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--color-button) 30%, transparent);
 }
 .icon-filter-btn svg {
   filter: grayscale(0.3);
@@ -716,8 +855,8 @@ async function onSearch() {
   width: 70px;
 }
 .search-btn {
-  background: linear-gradient(90deg, #eab676 0%, #b48c6e 100%);
-  color: #fff;
+  background: var(--color-button);
+  color: var(--color-button-text);
   border: none;
   border-radius: 10px;
   padding: 13px;
@@ -725,17 +864,17 @@ async function onSearch() {
   font-weight: bold;
   cursor: pointer;
   margin-top: 8px;
-  box-shadow: 0 2px 8px #eab67633;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-button) 20%, transparent);
   transition: background 0.2s, box-shadow 0.2s;
 }
 .search-btn:hover {
-  background: linear-gradient(90deg, #b48c6e 0%, #eab676 100%);
-  box-shadow: 0 4px 16px #eab67644;
+  background: color-mix(in srgb, var(--color-button) 85%, black);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--color-button) 30%, transparent);
 }
 .validation-errors {
-  color: #b00;
-  background: #fff6f6;
-  border: 1px solid #fbb;
+  color: var(--color-destructive);
+  background: color-mix(in srgb, var(--color-destructive) 10%, var(--color-background));
+  border: 1px solid color-mix(in srgb, var(--color-destructive) 50%, var(--color-background));
   border-radius: 8px;
   padding: 8px 12px;
   margin-bottom: 10px;
@@ -760,7 +899,7 @@ async function onSearch() {
 
 /* Стиль для кнопки під час завантаження */
 .search-btn[disabled] {
-    background: #ccc;
+    background: var(--color-text-secondary);
     cursor: not-allowed;
     box-shadow: none;
 }

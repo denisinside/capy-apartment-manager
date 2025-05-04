@@ -20,8 +20,9 @@
         <button class="contracts-btn docx" @click="downloadDOCX">
           <span>⬇️ Завантажити DOC</span>
         </button>
-        <button class="contracts-btn share" @click="shareContract">
-          <span>📤 Поділитися</span>
+        <button class="contracts-btn share" @click="shareContractViaBot" :disabled="isSharing">
+          <span v-if="!isSharing">📤 Поділитися через бота</span>
+          <span v-else>Обробка...</span>
         </button>
       </div>
       <div class="contracts-faq">
@@ -39,19 +40,23 @@
         </div>
       </div>
     </div>
-    <div class="contracts-footer-bg">
-      <img src="/skyline.png" class="contracts-footer-img" alt="city" />
-    </div>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
 import { useTelegram } from '../useTelegram'
+import axios from 'axios'
+
 const pdfUrl = '/zrazok-dogovoru-orendy-zhytla.pdf'
 const docxUrl = '/zrazok-dogovoru-orendy-zhytla.docx'
 const openIdx = ref(null)
-const { tg, user } = useTelegram()
+const { tg, user, isReady } = useTelegram()
+const isSharing = ref(false)
+
+// API URL - переконайся, що він правильний для твого середовища
+const API_BASE_URL = import.meta.env.VITE_SERVER_BASE || 'http://localhost:3000'
+
 const faqs = [
   {
     q: 'Що таке договір оренди (найму) житла чи квартири?',
@@ -74,6 +79,7 @@ const faqs = [
     a: 'Так, але потрібно змінити формулювання щодо типу житла.'
   },
 ]
+
 function toggle(idx) {
   openIdx.value = openIdx.value === idx ? null : idx
 }
@@ -114,19 +120,50 @@ function downloadDOCX() {
   }
 }
 
-// Копіювання посилання на додаток в буфер обміну
-function shareContract() {
-  const linkToCopy = 'https://t.me/capy_flat_bot?startapp=contracts';
+async function shareContractViaBot() {
+  if (!tg || !isReady.value || !user.value?.id) {
+    console.error('Telegram WebApp is not ready or user ID is missing.')
+    alert('Помилка: Telegram WebApp не готовий або не вдалося отримати ID користувача.')
+    return
+  }
+
+  if (isSharing.value) return
+  isSharing.value = true
+
   try {
-    navigator.clipboard.writeText(linkToCopy).then(() => {
-      tg.showAlert('Посилання скопійовано: ' + linkToCopy);
-    }, (err) => {
-      console.error('Could not copy text: ', err);
-      tg.showAlert('Не вдалося скопіювати посилання');
+    const response = await axios.post(`/api/bot/prepare-contract-share`, {
+      userId: user.value.id
     });
-  } catch (err) {
-    console.error('Fallback: Oops, unable to copy', err);
-    tg.showAlert('Не вдалося скопіювати посилання (помилка)');
+
+    if (response.data && response.data.success && response.data.preparedMessageId) {
+      const preparedMessageId = response.data.preparedMessageId
+      console.log('Received preparedMessageId:', preparedMessageId)
+
+      if (tg.shareMessage) {
+        tg.shareMessage(preparedMessageId, (sent) => {
+          if (sent) {
+            console.log('Message shared successfully via bot.')
+            tg.showAlert('Посилання на договори успішно надіслано!')
+          } else {
+            console.warn('User cancelled sharing or it failed.')
+            tg.showAlert('Надсилання скасовано.')
+          }
+        })
+      } else {
+        console.error('tg.shareMessage is not available in this Telegram version.')
+        tg.showAlert('Функція поділитися повідомленням не доступна у вашій версії Telegram.')
+      }
+    } else {
+      console.error('Failed to prepare message:', response.data)
+      tg.showAlert('Помилка підготовки повідомлення для надсилання.')
+    }
+
+  } catch (error) {
+    console.error('Error sharing contract via bot:', error)
+    const errorMessage = error.response?.data?.message || error.message || 'Невідома помилка сервера.'
+    tg.showAlert(`Помилка: ${errorMessage}`)
+  } finally {
+    isSharing.value = false // Розблоковуємо кнопку
   }
 }
 </script>
@@ -134,7 +171,7 @@ function shareContract() {
 <style scoped>
 .contracts-bg {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f7e6d4 0%, #fff 100%);
+  background: var(--color-background);
   display: flex;
   flex-direction: column;
   position: relative;
@@ -153,25 +190,25 @@ function shareContract() {
 .contracts-title {
   font-size: 1.3rem;
   font-weight: 700;
-  color: #6d4c2c;
+  color: var(--color-section-header-text);
   margin-bottom: 4px;
 }
 .contracts-subtitle {
   font-size: 1.1rem;
-  color: #222;
+  color: var(--color-text);
   font-weight: 500;
   margin-bottom: 12px;
-  background: #2222;
+  background: var(--color-background-soft);
   padding: 6px 0;
   border-radius: 6px;
 }
 .contracts-pdf-block {
-  background: #fff;
+  background: var(--color-background-soft);
   border-radius: 12px 12px 0 0;
   box-shadow: 0 2px 8px #0001;
   margin: 0 12px;
   overflow: hidden;
-  border: 1px solid #eab676;
+  border: 1px solid var(--color-border);
 }
 .contracts-pdf-viewer {
   width: 100%;
@@ -180,7 +217,7 @@ function shareContract() {
   max-height: 420px;
   display: block;
   border: none;
-  background: #fff;
+  background: var(--color-background);
 }
 .contracts-actions {
   display: flex;
@@ -196,8 +233,8 @@ function shareContract() {
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  background: #f7e6d4;
-  color: #a05c3c;
+  background: var(--color-background-soft);
+  color: var(--color-text);
   text-align: center;
   text-decoration: none;
   box-shadow: 0 1px 4px #0001;
@@ -208,30 +245,37 @@ function shareContract() {
   gap: 8px;
 }
 .contracts-btn.pdf {
-  background: #ffe7d1;
+  background: var(--color-background-soft);
+  color: var(--color-link);
 }
 .contracts-btn.docx {
-  background: #f5f0f0;
+  background: var(--color-background-soft);
+  color: var(--color-accent);
 }
 .contracts-btn.share {
-  background: #eab676;
-  color: #fff;
+  background: var(--color-button);
+  color: var(--color-button-text);
 }
 .contracts-btn:active {
-  background: #f5d6b6;
+  filter: brightness(0.95);
+}
+.contracts-btn.share:disabled {
+  background-color: var(--color-text-secondary);
+  cursor: not-allowed;
+  color: var(--color-background);
 }
 .contracts-faq {
   margin: 18px 12px 0 12px;
-  background: #fff6ef;
+  background: var(--color-section-bg);
   border-radius: 12px;
   box-shadow: 0 2px 8px #0001;
-  border: 1px solid #eab676;
+  border: 1px solid var(--color-border);
   padding: 12px 0 8px 0;
 }
 .faq-title {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #a05c3c;
+  color: var(--color-section-header-text);
   margin-bottom: 8px;
   text-align: center;
 }
@@ -246,14 +290,14 @@ function shareContract() {
 .faq-q {
   font-size: 1.05rem;
   font-weight: 600;
-  color: #a05c3c;
+  color: var(--color-text);
   padding: 10px 8px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #ffe7d1;
-  border-bottom: 1px solid #f5d6b6;
+  background: var(--color-background-soft);
+  border-bottom: 1px solid var(--color-border);
   user-select: none;
   border-radius: 8px;
 }
@@ -267,8 +311,8 @@ function shareContract() {
 .faq-a {
   padding: 10px 8px 10px 8px;
   font-size: 1rem;
-  color: #444;
-  background: #fff;
+  color: var(--color-text);
+  background: var(--color-background);
   animation: fadeIn 0.2s;
   border-radius: 8px;
 }

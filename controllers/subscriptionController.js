@@ -93,7 +93,6 @@ export const deleteSubscription = async (req, res) => {
     }
 };
 
-// Новий контролер для отримання квартир на перегляд
 export const getApartmentsForReview = async (req, res) => {
     try {
         const { userId } = req.params;
@@ -113,7 +112,6 @@ export const getApartmentsForReview = async (req, res) => {
     }
 };
 
-// Новий контролер для видалення квартири зі списку очікування
 export const removeNotifiedApartment = async (req, res) => {
     try {
         const { userId, apartmentId } = req.params;
@@ -133,7 +131,6 @@ export const removeNotifiedApartment = async (req, res) => {
     }
 };
 
-// Новий контролер для оновлення підписки
 export const updateSubscription = async (req, res) => {
     try {
         const { subscriptionId } = req.params;
@@ -146,10 +143,7 @@ export const updateSubscription = async (req, res) => {
             });
         }
 
-        // TODO: Додати валідацію subscriptionOptions тут або в сервісі
-        // Парсимо опції аналогічно до createSubscription, якщо потрібно
         let parsedOptions = { ...subscriptionOptions };
-        // Парсимо об'єкти, якщо вони прийшли рядком
         ["price", "area", "floor"].forEach(key => {
             if (parsedOptions[key] && typeof parsedOptions[key] === 'string') {
                 try { parsedOptions[key] = JSON.parse(parsedOptions[key]); } catch (e) {}

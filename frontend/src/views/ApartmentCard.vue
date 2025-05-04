@@ -93,8 +93,7 @@ const showPhotoModal = ref(false)
 const modalPhotoIndex = ref(0)
 
 const photos = computed(() => props.apartment?.photo || [])
-//const isActive = computed(() => props.apartment && props.apartment.is_active !== false)
-const isActive = computed(() => true)
+const isActive = computed(() => props.apartment && props.apartment.is_active !== false)
 
 const price = computed(() => props.apartment?.price?.price_number || '')
 const currencySymbol = computed(() => {
@@ -257,9 +256,9 @@ onMounted(() => {
   min-width: 350px;
   min-height: 220px;
   max-height: 240px;
-  background: #fff;
+  background: var(--color-background);
   border-radius: 12px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--color-border);
   overflow: hidden;
   position: relative;
   margin-bottom: 10px;
@@ -297,8 +296,8 @@ onMounted(() => {
   position: absolute;
   right: 12px;
   bottom: 10px;
-  background: rgba(0,0,0,0.5);
-  color: #fff;
+  background: color-mix(in srgb, var(--color-background, #000) 50%, transparent);
+  color: var(--color-text, #fff);
   font-size: 13px;
   border-radius: 8px;
   padding: 2px 8px;
@@ -313,8 +312,8 @@ onMounted(() => {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: rgba(240, 240, 240, 0.7);
-  border: none;
+  background: color-mix(in srgb, var(--color-secondary-bg, var(--color-background-soft)) 70%, transparent);
+  border: 1px solid var(--color-border);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -325,18 +324,18 @@ onMounted(() => {
 }
 
 .like-btn:hover {
-  background: rgba(240, 240, 240, 0.9);
+  background: color-mix(in srgb, var(--color-secondary-bg, var(--color-background-soft)) 90%, transparent);
 }
 
 .like-btn svg {
   fill: none;
-  stroke: #aaa;
+  stroke: var(--color-hint-color, #aaa);
   stroke-width: 1.5;
 }
 
 .like-btn.liked svg {
-  fill: #e74c3c;
-  stroke: #e74c3c;
+  fill: var(--color-destructive, #e74c3c);
+  stroke: var(--color-destructive, #e74c3c);
 }
 
 .info-container {
@@ -350,7 +349,7 @@ onMounted(() => {
 .price {
   font-weight: bold;
   font-size: 28px;
-  color: #333;
+  color: var(--color-text);
   white-space: nowrap;
   display: flex;
   align-items: baseline;
@@ -362,13 +361,13 @@ onMounted(() => {
 .currency {
   font-size: 14px;
   font-weight: normal;
-  color: #555;
+  color: var(--color-text-secondary);
   display: inline-block;
   letter-spacing: -0.3px;
 }
 
 .address {
-  color: darkred;
+  color: var(--color-accent, darkred);
   line-height: 1.2;
 }
 .address span:first-child {
@@ -381,11 +380,12 @@ onMounted(() => {
   font-weight: 500;
   letter-spacing: -0.4px;
   white-space: nowrap;
+  color: var(--color-subtitle, #555);
 }
 
 .street {
   font-size: 14px;
-  color: #666;
+  color: var(--color-text-secondary);
   margin-bottom: 10px;
   letter-spacing: -0.5px;
   line-height: 1.2;
@@ -399,13 +399,13 @@ onMounted(() => {
 }
 
 .home-icon {
-  background: #f5f5f5;
+  background: var(--color-background-soft);
   font-size: 12px;
 }
 
 .char-text {
   font-size: 14px;
-  color: #555;
+  color: var(--color-text);
   letter-spacing: -0.2px;
   line-height: 1.2;
 }
@@ -415,7 +415,7 @@ onMounted(() => {
 }
 
 .floor {
-  color: #888;
+  color: var(--color-text-secondary);
 }
 
 .metro {
@@ -426,7 +426,6 @@ onMounted(() => {
 }
 
 .metro-icon {
-  background: #e74c3c;
   color: white;
   font-weight: 800;
   min-width: 24px;
@@ -460,11 +459,11 @@ onMounted(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  background: color-mix(in srgb, var(--tg-theme-secondary-bg-color, #000) 50%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: var(--tg-theme-text-color, white);
   font-size: 32px;
   font-weight: bold;
   letter-spacing: 2px;
@@ -478,14 +477,14 @@ onMounted(() => {
   top: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0,0,0,0.85);
+  background: color-mix(in srgb, var(--color-background, #000) 85%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .modal-content {
   position: relative;
-  background: transparent;
+  background: none;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -508,7 +507,7 @@ onMounted(() => {
   right: 32px;
   background: none;
   border: none;
-  color: #fff;
+  color: var(--color-button-text, #fff);
   font-size: 40px;
   cursor: pointer;
   z-index: 2;
@@ -516,8 +515,8 @@ onMounted(() => {
   line-height: 1;
 }
 .modal-photo-counter {
-  color: #fff;
-  background: rgba(0,0,0,0.5);
+  color: var(--color-text, #fff);
+  background: color-mix(in srgb, var(--color-background, #000) 50%, transparent);
   border-radius: 8px;
   padding: 2px 10px;
   font-size: 15px;
@@ -528,8 +527,8 @@ onMounted(() => {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(0,0,0,0.7);
-  color: #fff;
+  background: color-mix(in srgb, var(--color-background, #000) 70%, transparent);
+  color: var(--color-text, #fff);
   border: none;
   font-size: 40px;
   width: 48px;
@@ -544,7 +543,7 @@ onMounted(() => {
   opacity: 0.9;
 }
 .modal-prev:hover, .modal-next:hover {
-  background: rgba(0,0,0,1);
+  background: color-mix(in srgb, var(--color-background, #000) 100%, transparent);
 }
 .modal-prev {
   left: 16px;

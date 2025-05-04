@@ -1,5 +1,5 @@
 import express from 'express';
-import { addToFavourites, removeFromFavourites, getFavourites } from '../controllers/favouritesController.js';
+import { addToFavourites, removeFromFavourites, getFavourites, getFavouriteApartments } from '../controllers/favouritesController.js';
 
 const router = express.Router();
 
@@ -11,5 +11,8 @@ router.delete('/:userId/:apartmentId', removeFromFavourites);
 
 // GET /api/favourites/:userId - отримати улюблені користувача
 router.get('/:userId', getFavourites);
+
+// GET /api/favourites/:userId/apartments - отримати деталі улюблених квартир одним запитом
+router.get('/:userId/apartments', getFavouriteApartments);
 
 export default router; 

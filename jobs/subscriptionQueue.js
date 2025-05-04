@@ -71,9 +71,7 @@ class SubscriptionQueue {
 
         const query = buildQuery(subscriptionOptions);
         query['created_at'] = { $gt: lastNotifiedAt || new Date(0) };
-        
         const newAds = await Apartment.find(query).lean();
-        console.log(`Found ${newAds.length} new ads for user ${userId}`);
         
         if (newAds.length === 0) continue;
 
@@ -82,13 +80,40 @@ class SubscriptionQueue {
 
         const newAdIds = newAds.map(ad => ad._id.toString());
 
-        await UserSubscription.updateOne(
-          { _id: sub._id },
-          {
-            $set: { lastNotifiedAt: now, updatedAt: now },
-            $push: { notifiedApartmentIds: { $each: newAdIds } } 
-          }
-        );
+        // --- Safely update subscription ---
+        try {
+            const subDoc = await UserSubscription.findById(sub._id);
+            if (subDoc) {
+                let currentIds = subDoc.notifiedApartmentIds;
+
+                if (typeof currentIds === 'string') {
+                    try {
+                        currentIds = JSON.parse(currentIds);
+                        if (!Array.isArray(currentIds)) {
+                            console.warn(`Parsed notifiedApartmentIds for sub ${sub._id} is not an array, resetting.`);
+                            currentIds = [];
+                        }
+                    } catch (e) {
+                        console.warn(`Failed to parse notifiedApartmentIds string for sub ${sub._id}, resetting:`, e);
+                        currentIds = [];
+                    }
+                } else if (!Array.isArray(currentIds)) {
+                    console.warn(`notifiedApartmentIds for sub ${sub._id} is not an array or string, resetting.`);
+                    currentIds = [];
+                }
+
+                const updatedIds = Array.from(new Set([...currentIds, ...newAdIds]));
+
+                subDoc.notifiedApartmentIds = updatedIds;
+                subDoc.lastNotifiedAt = now;
+                subDoc.updatedAt = now; 
+                await subDoc.save();
+            } else {
+               console.warn(`Subscription ${sub._id} not found during update.`);
+            }
+        } catch(updateError) {
+            console.error(`Failed to update subscription ${sub._id} for user ${userId}:`, updateError);
+        }
       }
 
       console.log('[subscription-check] Job finished at', new Date().toISOString());

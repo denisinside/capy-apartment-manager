@@ -3,9 +3,30 @@ import { useFavouritesStore } from './stores/favourites';
 import { useSubscriptionsStore } from './stores/subscriptions';
 
 const defaultHeaders = {
-  'ngrok-skip-browser-warning': 'true',
   'Accept': 'application/json',
   'Content-Type': 'application/json'
+};
+
+// Always include Telegram WebApp initData header for validation on server
+const originalFetch = window.fetch.bind(window);
+window.fetch = (resource, init = {}) => {
+  const method = (init.method || 'GET').toUpperCase();
+  let initDataString = null;
+  if (window.Telegram && window.Telegram.WebApp) {
+    initDataString = window.Telegram.WebApp.initData || null;
+  }
+  const headers = { ...(init.headers || {}) };
+  if (initDataString) {
+    headers['X-Telegram-Init-Data'] = initDataString;
+  }
+  console.log('[API] Fetch Override ->', method, resource, 'initDataPresent:', !!initDataString, 'initData:', initDataString, 'headers:', headers);
+  return originalFetch(resource, { ...init, headers })
+    .then(res => {
+      const validatorStatus = res.headers.get('X-Telegram-Validator');
+      const validatorError = res.headers.get('X-Telegram-Validator-Error');
+      console.log('[API] Fetch Response ->', resource, 'status:', res.status, 'Validator:', validatorStatus, 'Error:', validatorError);
+      return res;
+    });
 };
 
 export async function fetchApartments(params = {}) {
@@ -178,5 +199,12 @@ export async function removeNotifiedApartment(userId, apartmentId) {
 export async function fetchRieltorsByAgencyName(agencyName) {
   const res = await fetch(`/api/apartments/agencies/${encodeURIComponent(agencyName)}/rieltors`, { headers: defaultHeaders });
   if (!res.ok) throw new Error('Failed to fetch realtors by agency');
+  return res.json();
+}
+
+// Fetch full details of favourite apartments for a user
+export async function fetchFavouriteApartments(userId) {
+  const res = await fetch(`/api/favourites/${userId}/apartments`, { headers: defaultHeaders });
+  if (!res.ok) throw new Error('Failed to fetch favourite apartments');
   return res.json();
 }

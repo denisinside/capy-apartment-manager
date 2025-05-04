@@ -12,8 +12,8 @@ class ApartmentService {
             }
 
             const query = {
-                'apartment.address.city': subscriptionOptions.city
-                //'is_active': true
+                'apartment.address.city': subscriptionOptions.city,
+                'is_active': true
             };
 
             // Price filter

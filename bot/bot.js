@@ -1,5 +1,5 @@
 import { Telegraf } from "telegraf";
-import { startMessage, searchApartments } from "./messages.js";
+import { startMessage, sendContractTemplates } from "./messages.js";
 import subscriptionService from "../services/subscriptionService.js";
 
 let bot;
@@ -12,38 +12,35 @@ const startBot = async () => {
 
         bot.start((ctx) => {
             const chat_id = ctx.chat.id;
+            console.log(`Received /start command from chat_id: ${chat_id}`);
             startMessage(ctx, chat_id);
         });
           
-        bot.on("callback_query", (ctx) => {
+        bot.on("callback_query", async (ctx) => {
             const chat_id = ctx.chat.id;
             const data = ctx.callbackQuery.data;
-            if (data === "search_kyiv") {
-                ctx.reply("Я почав пошук квартир у Києві. Це може зайняти деякий час...");
-                subscriptionService.createSubscription(chat_id, {city: "Київ"});
-            } else if (data === "search_lviv") {
-                ctx.reply("Я почав пошук квартир у Львові. Це може зайняти деякий час...");
-                subscriptionService.createSubscription(chat_id, {city: "Львів", price: {min: 0, max: 12000}});
-            } else if (data === "search_kharkiv") {
-                ctx.reply("Я почав пошук квартир у Харкові. Це може зайняти деякий час...");
-                subscriptionService.createSubscription(chat_id, {city: "Харків", rooms: {min: 1, max: 1}});
-            } else if (data === "search_dnipro") {
-                ctx.reply("Я почав пошук квартир у Дніпрі. Це може зайняти деякий час...");
-                searchApartments(ctx, chat_id, "Дніпро");
-            } else if (data === "search_odesa") {
-                ctx.reply("Я почав пошук квартир у Одесі. Це може зайняти деякий час...");
-                searchApartments(ctx, chat_id, "Одеса");
-            } else if (data === "search_poltava") {
-                ctx.reply("Я почав пошук квартир у Полтаві. Це може зайняти деякий час...");
-                searchApartments(ctx, chat_id, "Полтава");
-            } else if (data === "search_zhytomyr") {
-                ctx.reply("Я почав пошук квартир у Житомирі. Це може зайняти деякий час...");
-                searchApartments(ctx, chat_id, "Житомир");
-            } else if (data === "search_chernigov") {
-                ctx.reply("Я почав пошук квартир у Чернігові. Це може зайняти деякий час...");
-                searchApartments(ctx, chat_id, "Чернігів");
+            console.log(`Received callback_query: ${data} from chat_id: ${chat_id}`);
+
+            if (data === "share_contract") {
+                try {
+                     await ctx.answerCbQuery('Зараз надішлю шаблони...');
+                     await sendContractTemplates(bot, chat_id);
+                } catch (error) {
+                    console.error(`Error processing share_contract for chat_id ${chat_id}:`, error);
+                    await ctx.reply('Виникла помилка при надсиланні шаблонів договорів.');
+                    await ctx.answerCbQuery('Помилка при надсиланні шаблонів').catch(e => console.error("Failed to answer callback query on error:", e)); 
+                }
             } else {
-                ctx.reply("Я не розумію вашого запиту. Будь ласка, спробуйте ще раз.");
+                console.warn(`Received unexpected callback_query: ${data} from chat_id: ${chat_id}`);
+                await ctx.answerCbQuery('Ця дія більше не підтримується.');
+            }
+        });
+
+        bot.on('message', async (ctx) => {
+            if (ctx.message && ctx.message.web_app_data) {
+                const chat_id = ctx.chat.id;
+                const data = ctx.message.web_app_data.data;
+                console.log(`Received web_app_data: ${data} from chat_id: ${chat_id}`);
             }
         });
 

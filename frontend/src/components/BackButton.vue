@@ -18,14 +18,15 @@ function goBack() {
   top: 16px;
   left: 16px;
   z-index: 20;
-  background: rgba(240,240,240,0.7);
-  border: none;
+  /* Adjust background for better visibility on different themes */
+  background: color-mix(in srgb, var(--color-secondary-bg, var(--color-background-soft)) 70%, transparent);
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   width: 36px;
   height: 36px;
   font-size: 20px;
   font-weight: bold;
-  color: #333;
+  color: var(--color-text); /* Use main text color */
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -35,6 +36,6 @@ function goBack() {
   padding: 0;
 }
 .back-btn:hover {
-  background: rgba(240,240,240,0.9);
+  background: color-mix(in srgb, var(--color-secondary-bg, var(--color-background-soft)) 90%, transparent);
 }
 </style> 

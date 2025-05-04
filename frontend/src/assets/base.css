@@ -1,53 +1,29 @@
-/* color palette from <https://github.com/vuejs/theme> */
+/* Define CSS variables based on Telegram theme */
 :root {
-  --vt-c-white: #ffffff;
-  --vt-c-white-soft: #f8f8f8;
-  --vt-c-white-mute: #f2f2f2;
+  --color-background: var(--tg-theme-bg-color, #ffffff);
+  --color-background-soft: var(--tg-theme-secondary-bg-color, #f8f8f8);
+  --color-background-mute: var(--tg-theme-section-bg-color, #f2f2f2); /* Use section_bg_color or fallback */
 
-  --vt-c-black: #181818;
-  --vt-c-black-soft: #222222;
-  --vt-c-black-mute: #282828;
+  --color-border: var(--tg-theme-section-separator-color, #e0e0e0); /* Use separator or fallback */
+  --color-border-hover: var(--tg-theme-hint-color, #c0c0c0); /* Use hint or fallback */
 
-  --vt-c-indigo: #2c3e50;
+  --color-heading: var(--tg-theme-text-color, #181818);
+  --color-text: var(--tg-theme-text-color, #181818);
+  --color-text-secondary: var(--tg-theme-hint-color, #708499);
+  --color-subtitle: var(--tg-theme-subtitle-text-color, #888888);
 
-  --vt-c-divider-light-1: rgba(60, 60, 60, 0.29);
-  --vt-c-divider-light-2: rgba(60, 60, 60, 0.12);
-  --vt-c-divider-dark-1: rgba(84, 84, 84, 0.65);
-  --vt-c-divider-dark-2: rgba(84, 84, 84, 0.48);
+  --color-link: var(--tg-theme-link-color, #2980b9);
+  --color-button: var(--tg-theme-button-color, #5288c1);
+  --color-button-text: var(--tg-theme-button-text-color, #ffffff);
+  --color-accent: var(--tg-theme-accent-text-color, #6ab3f3);
+  --color-destructive: var(--tg-theme-destructive-text-color, #ec3942);
 
-  --vt-c-text-light-1: var(--vt-c-indigo);
-  --vt-c-text-light-2: rgba(60, 60, 60, 0.66);
-  --vt-c-text-dark-1: var(--vt-c-white);
-  --vt-c-text-dark-2: rgba(235, 235, 235, 0.64);
-}
-
-/* semantic color variables for this project */
-:root {
-  --color-background: var(--vt-c-white);
-  --color-background-soft: var(--vt-c-white-soft);
-  --color-background-mute: var(--vt-c-white-mute);
-
-  --color-border: var(--vt-c-divider-light-2);
-  --color-border-hover: var(--vt-c-divider-light-1);
-
-  --color-heading: var(--vt-c-text-light-1);
-  --color-text: var(--vt-c-text-light-1);
+  --color-header-bg: var(--tg-theme-header-bg-color, #ffffff);
+  --color-bottom-bar-bg: var(--tg-theme-bottom-bar-bg-color, #ffffff);
+  --color-section-bg: var(--tg-theme-section-bg-color, #f2f2f2);
+  --color-section-header-text: var(--tg-theme-section-header-text-color, #6ab3f3);
 
   --section-gap: 160px;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-background: var(--vt-c-black);
-    --color-background-soft: var(--vt-c-black-soft);
-    --color-background-mute: var(--vt-c-black-mute);
-
-    --color-border: var(--vt-c-divider-dark-2);
-    --color-border-hover: var(--vt-c-divider-dark-1);
-
-    --color-heading: var(--vt-c-text-dark-1);
-    --color-text: var(--vt-c-text-dark-2);
-  }
 }
 
 *,

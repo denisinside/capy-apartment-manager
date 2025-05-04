@@ -15,61 +15,47 @@ app.use(createPinia())
 app.use(router)
 
 router.isReady().then(() => {
+  const { isReady, startParam, clearStartParam } = useTelegram();
+
   if (isReady.value && startParam.value) {
+    const apartmentId = startParam.value;
+    const sessionStorageKey = `startParamProcessed_${apartmentId}`;
 
-    const processedStartParam = startParam.value;
-    // Ключ для sessionStorage, унікальний для цього startParam
-    const sessionStorageKey = `startParamProcessed_${processedStartParam}`;
-
-    // Перевіряємо, чи цей startParam вже оброблено в поточній сесії
-    if (!sessionStorage.getItem(sessionStorageKey)) {
-      console.log(`Processing startParam: ${processedStartParam}`);
-      // Розділяємо параметр на частини за допомогою '_'
-      const parts = processedStartParam.split('_');
-      const routeName = parts[0];
-      const routeParams = parts.slice(1); // Решта частин - параметри
-
-      // Викликаємо функцію очищення Vue ref (хоча це вже не головний механізм)
-      clearStartParam();
-
-      // Позначаємо цей startParam як оброблений у sessionStorage
+    if (apartmentId && !sessionStorage.getItem(sessionStorageKey)) {
+      console.log(`Processing startParam as apartment ID: ${apartmentId}`);
+      
       try {
         sessionStorage.setItem(sessionStorageKey, 'true');
       } catch (e) {
         console.error('Failed to set sessionStorage item:', e);
-        // Обробка помилки, якщо sessionStorage недоступний або переповнений
       }
-
-      // Перевіряємо, чи існує маршрут з таким іменем
-      if (router.hasRoute(routeName)) {
-        let navigationTarget = { name: routeName };
-
-        // Спробуємо зіставити параметри
-        if (routeName === 'apartment-details' && routeParams.length === 1) {
-          navigationTarget.params = { id: routeParams[0] };
-        } else if (routeParams.length > 0) {
-          console.warn(`Route "${routeName}" found, but parameter handling for "${processedStartParam}" is not implemented.`);
-        }
-
-        router.push(navigationTarget).catch(err => {
-          console.error('Navigation Error:', err);
-          router.push({ name: 'map' });
+      
+      router.push({ name: 'apartment-details', params: { id: apartmentId } })
+        .then(() => {
+          console.log(`Successfully navigated to apartment ${apartmentId}`);
+          clearStartParam();
+        })
+        .catch(err => {
+          console.error('Navigation Error from startParam:', err);
+          router.push({ name: '/' }); 
+          clearStartParam();
         });
-      } else {
-        console.warn(`Route with name "${routeName}" not found (from startParam: "${processedStartParam}").`);
-        router.push({ name: 'map' });
-      }
-    } else {
-      console.log(`StartParam "${processedStartParam}" already processed in this session.`);
-      // Якщо вже оброблено, очищаємо Vue ref, щоб він не заважав
+
+    } else if (sessionStorage.getItem(sessionStorageKey)) {
+      console.log(`StartParam "${apartmentId}" already processed in this session.`);
       clearStartParam();
-      // Можливо, тут варто перенаправити на 'map' або залишити поточну сторінку
-       // router.push({ name: 'map' });
+    } else {
+       console.warn("Received empty or invalid startParam:", startParam.value);
+       clearStartParam();
     }
+  } else if (isReady.value && !startParam.value) {
+    console.log('App ready, no startParam found.');
+    app.mount('#app');
   } else {
-     // Якщо немає startParam, можна теж перейти на дефолтний маршрут
-     // router.push({ name: 'map' });
+    app.mount('#app');
   }
 
-  app.mount('#app')
+  if (!app._container) {
+      app.mount('#app');
+  }
 });

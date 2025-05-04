@@ -82,7 +82,7 @@ function toggle(idx) {
 <style scoped>
 .safety-bg {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f7e6d4 0%, #fff 100%);
+  background: var(--color-background);
   display: flex;
   flex-direction: column;
   position: relative;
@@ -101,12 +101,12 @@ function toggle(idx) {
 .safety-title {
   font-size: 1.3rem;
   font-weight: 700;
-  color: #6d4c2c;
+  color: var(--color-section-header-text);
   margin-bottom: 4px;
 }
 .safety-subtitle {
   font-size: 1.1rem;
-  color: #a00;
+  color: var(--color-destructive);
   font-weight: 500;
   margin-bottom: 12px;
 }
@@ -121,10 +121,10 @@ function toggle(idx) {
   padding: 0 12px;
 }
 .safety-block {
-  background: #fff6ef;
+  background: var(--color-section-bg);
   border-radius: 12px;
   box-shadow: 0 2px 8px #0001;
-  border: 1px solid #eab676;
+  border: 1px solid var(--color-accent);
   overflow: hidden;
   transition: box-shadow 0.18s;
   width: 100%;
@@ -135,14 +135,14 @@ function toggle(idx) {
   box-sizing: border-box;
   font-size: 1.08rem;
   font-weight: 600;
-  color: #a05c3c;
+  color: var(--color-section-header-text);
   padding: 14px 16px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #ffe7d1;
-  border-bottom: 1px solid #f5d6b6;
+  background: var(--color-background-soft);
+  border-bottom: 1px solid var(--color-border);
   user-select: none;
 }
 .arrow {
@@ -155,8 +155,8 @@ function toggle(idx) {
 .safety-block-desc {
   padding: 14px 16px 14px 16px;
   font-size: 1rem;
-  color: #444;
-  background: #fff;
+  color: var(--color-text);
+  background: var(--color-background);
   animation: fadeIn 0.2s;
 }
 .fade-enter-active, .fade-leave-active {

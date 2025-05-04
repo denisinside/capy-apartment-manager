@@ -111,7 +111,7 @@ onMounted(async () => {
   position: relative;
 }
 .rieltor-block-fixed {
-  background: #fff;
+  background: var(--color-section-bg);
   border-radius: 16px;
   box-shadow: 0 2px 16px rgba(0,0,0,0.08);
   margin: 0 0 18px 0;
@@ -140,16 +140,16 @@ onMounted(async () => {
 .rieltor-name {
   font-weight: 600;
   font-size: 18px; /* Larger name font size */
-  color: #222;
+  color: var(--color-text);
   line-height: 1.2;
 }
 .rieltor-position {
   font-size: 14px; /* Slightly larger position font size */
-  color: #888;
+  color: var(--color-text-secondary);
 }
 .rieltor-agency {
   font-size: 15px;
-  color: #a05c3c;
+  color: var(--color-link);
   font-weight: 600;
   cursor: pointer;
   /* removed margin-left as it's centered now */
@@ -174,18 +174,18 @@ onMounted(async () => {
   cursor: pointer;
 }
 .call-btn {
-  background: #f5c242;
-  color: #222;
+  background: var(--color-button);
+  color: var(--color-button-text);
 }
 .msg-btn {
-  background: #fff;
-  color: #a05c3c;
-  border: 1px solid #a05c3c;
+  background: var(--color-background-soft);
+  color: var(--color-link);
+  border: 1px solid var(--color-link);
 }
 .msg-btn:disabled {
-  background: #f0f0f0;
-  color: #aaa;
-  border-color: #ddd;
+  background: var(--color-background-mute);
+  color: var(--color-text-secondary);
+  border-color: var(--color-border);
   cursor: not-allowed;
 }
 .copied-msg {
@@ -197,7 +197,7 @@ onMounted(async () => {
 }
 .apartment-count {
   font-size: 1.1rem;
-  color: #b48c6e;
+  color: var(--color-accent);
   font-weight: 500;
   margin-bottom: 0;
   text-align: center;
