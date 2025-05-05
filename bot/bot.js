@@ -16,7 +16,7 @@ const startBot = async () => {
             console.log(`Received /start command from chat_id: ${chat_id}`);
             startMessage(ctx, chat_id);
         });
-          
+
         bot.on("callback_query", async (ctx) => {
             const chat_id = ctx.chat.id;
             const data = ctx.callbackQuery.data;
